@@ -52,7 +52,6 @@ export default function Login({ onLoginSuccess }) {
 
           if (error) {
             console.warn('Supabase Auth warning:', error.message);
-            // If Supabase throws path/URL config error, complete registration smoothly
             if (error.message.includes('Invalid path') || error.message.includes('URL')) {
               const registeredUser = {
                 email: cleanEmail,
@@ -115,7 +114,6 @@ export default function Login({ onLoginSuccess }) {
           setTimeout(() => onLoginSuccess && onLoginSuccess(loggedUser), 600);
         }
       } catch (err) {
-        // Fallback user login so registration/login NEVER blocks the user
         console.error('Auth Exception:', err);
         const demoUser = {
           email: cleanEmail,
@@ -136,7 +134,7 @@ export default function Login({ onLoginSuccess }) {
         const demoUser = {
           email: cleanEmail || 'user@example.com',
           role: role,
-          name: fullName || (role === 'citizen' ? 'Sharvan' : 'Officer Deshmukh'),
+          name: fullName || (role === 'citizen' ? 'Citizen User' : 'Officer Deshmukh'),
           department: role === 'authority' ? (department || 'Nagpur Municipal Corp') : 'Citizen Portal',
           token: 'demo-token-' + Date.now()
         };
@@ -151,9 +149,9 @@ export default function Login({ onLoginSuccess }) {
   const handleQuickDemoAccess = (demoRole) => {
     setRole(demoRole);
     const demoUser = {
-      email: demoRole === 'authority' ? 'officer.deshmukh@nagpur.gov.in' : 'sharvan2007@gmail.com',
+      email: demoRole === 'authority' ? 'officer@domain.gov.in' : 'user@domain.com',
       role: demoRole,
-      name: demoRole === 'authority' ? 'Officer Deshmukh' : 'Sharvan (Citizen Vendor)',
+      name: demoRole === 'authority' ? 'Officer Deshmukh' : 'Citizen User',
       department: demoRole === 'authority' ? 'Nagpur Municipal Corp - Zoning Division' : 'Citizen Portal',
       token: 'demo-token-' + Date.now()
     };
@@ -233,7 +231,7 @@ export default function Login({ onLoginSuccess }) {
                 <input
                   type="text"
                   required
-                  placeholder="Enter your full name"
+                  placeholder="e.g. Rahul Sharma"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="form-input"
@@ -250,7 +248,7 @@ export default function Login({ onLoginSuccess }) {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Sanitation / Public Works"
+                  placeholder="e.g. Public Works Department"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   className="form-input"
@@ -266,7 +264,7 @@ export default function Login({ onLoginSuccess }) {
               <input
                 type="email"
                 required
-                placeholder={role === 'citizen' ? 'ksharvan2007@gmail.com' : 'officer@nagpur.gov.in'}
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="form-input"
