@@ -47,6 +47,8 @@ export default function App() {
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
     localStorage.setItem('vv_user_session', JSON.stringify(userData));
+    // Reset view to dashboard on login
+    setActiveModule('dashboard');
   };
 
   const handleLogout = () => {
@@ -55,27 +57,20 @@ export default function App() {
     localStorage.clear();
   };
 
-  // Complete System Reset to 0
-  const handleFullSystemReset = async () => {
-    if (!window.confirm("Confirm Full System Reset: This will wipe all vendors, alerts, login sessions, and clear the database to 0.")) return;
-    try {
-      await fetch(`${BACKEND_URL}/api/reset-database`, { method: 'POST' });
-    } catch (e) {
-      // Ignore network errors on reset
-    }
-    handleLogout();
-    window.location.reload();
-  };
-
   if (!currentUser) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
+  // Guard against citizens accessing admin-only modules
+  const isOfficer = currentUser.role === 'authority';
+  const isModuleAllowed = isOfficer || ['dashboard', 'zone_optimizer', 'certificate_management'].includes(activeModule);
+  const safeActiveModule = isModuleAllowed ? activeModule : 'dashboard';
+
   return (
     <div className="app-layout">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation with Role Filtering */}
       <Sidebar 
-        activeModule={activeModule} 
+        activeModule={safeActiveModule} 
         setActiveModule={setActiveModule} 
         currentUser={currentUser}
         onOpenVoiceModal={() => setVoiceModalOpen(true)}
@@ -84,29 +79,31 @@ export default function App() {
       {/* Main Content Area */}
       <div className="main-content">
         <Navbar 
-          activeModule={activeModule} 
+          activeModule={safeActiveModule} 
           currentUser={currentUser} 
           onLogout={handleLogout}
           backendStatus={backendStatus}
         />
 
         <main className="view-viewport">
-          {activeModule === 'dashboard' && (
-            <DashboardOverview onNavigate={setActiveModule} backendUrl={BACKEND_URL} />
+          {safeActiveModule === 'dashboard' && (
+            <DashboardOverview onNavigate={setActiveModule} backendUrl={BACKEND_URL} currentUser={currentUser} />
           )}
-          {activeModule === 'zone_optimizer' && (
+          {safeActiveModule === 'zone_optimizer' && (
             <AIZoneOptimizer backendUrl={BACKEND_URL} />
           )}
-          {activeModule === 'vendor_management' && (
-            <VendorManagement backendUrl={BACKEND_URL} />
-          )}
-          {activeModule === 'certificate_management' && (
+          {safeActiveModule === 'certificate_management' && (
             <CertificateManagement backendUrl={BACKEND_URL} />
           )}
-          {activeModule === 'mobile_inspector' && (
+
+          {/* Admin / Officer Only Views */}
+          {isOfficer && safeActiveModule === 'vendor_management' && (
+            <VendorManagement backendUrl={BACKEND_URL} />
+          )}
+          {isOfficer && safeActiveModule === 'mobile_inspector' && (
             <MobileInspector backendUrl={BACKEND_URL} />
           )}
-          {activeModule === 'impact_reports' && (
+          {isOfficer && safeActiveModule === 'impact_reports' && (
             <ImpactReport backendUrl={BACKEND_URL} />
           )}
         </main>

@@ -10,16 +10,19 @@ import {
   FileCheck, 
   ShieldAlert,
   RefreshCw,
-  Clock
+  Clock,
+  Mic,
+  UserPlus
 } from 'lucide-react';
 import './DashboardOverview.css';
 
-export default function DashboardOverview({ onNavigate, backendUrl }) {
+export default function DashboardOverview({ onNavigate, backendUrl, currentUser }) {
   const [vendors, setVendors] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const isOfficer = currentUser?.role === 'authority';
   const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
 
   const loadDashboardData = async () => {
@@ -96,7 +99,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
             <IndianRupee size={24} />
           </div>
           <div className="kpi-info">
-            <h3>{stats?.disbursed_amount || '₹1.28 Cr'}</h3>
+            <h3>{stats?.disbursed_amount || '₹0.00 Cr'}</h3>
             <p>PM SVANidhi Micro-Credit</p>
             <div className="kpi-trend neutral">{approvedVendors} Active Beneficiaries</div>
           </div>
@@ -124,28 +127,44 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
         {/* Right Column: Live Feed & Quick Actions */}
         <div className="alerts-section">
           
-          {/* Quick Actions Panel */}
+          {/* Quick Actions Panel - Role Specific */}
           <div className="card-panel">
             <div className="section-header">
-              <h2>Quick Actions</h2>
+              <h2>Quick Actions ({isOfficer ? 'Officer Controls' : 'Citizen Services'})</h2>
             </div>
+            
             <div className="action-btn-grid">
-              <button className="quick-act-btn" onClick={() => onNavigate('vendor_management')}>
-                <PlusCircle size={16} />
-                <span>Add Vendor</span>
-              </button>
-              <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
-                <FileCheck size={16} />
-                <span>Issue Certificate</span>
-              </button>
-              <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
-                <MapPin size={16} />
-                <span>Re-Zone Area</span>
-              </button>
-              <button className="quick-act-btn" onClick={() => onNavigate('mobile_inspector')}>
-                <ShieldAlert size={16} />
-                <span>Inspect Field</span>
-              </button>
+              {isOfficer ? (
+                <>
+                  <button className="quick-act-btn" onClick={() => onNavigate('vendor_management')}>
+                    <Users size={16} />
+                    <span>Vendor Directory</span>
+                  </button>
+                  <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
+                    <FileCheck size={16} />
+                    <span>Issue Certificate</span>
+                  </button>
+                  <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
+                    <MapPin size={16} />
+                    <span>Re-Zone Area</span>
+                  </button>
+                  <button className="quick-act-btn" onClick={() => onNavigate('mobile_inspector')}>
+                    <ShieldAlert size={16} />
+                    <span>Inspect Field</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
+                    <FileCheck size={16} />
+                    <span>My Certificate</span>
+                  </button>
+                  <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
+                    <MapPin size={16} />
+                    <span>View Zones</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
