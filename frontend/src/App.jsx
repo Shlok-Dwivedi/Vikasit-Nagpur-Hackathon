@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Navigation/Sidebar';
 import Navbar from './components/Navigation/Navbar';
 import Login from './components/Login';
@@ -13,6 +13,8 @@ import ImpactReport from './views/ImpactReport';
 
 import './App.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://vikasit-nagpur-hackathon.onrender.com';
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState({
     name: 'Officer Deshmukh',
@@ -20,23 +22,36 @@ export default function App() {
     department: 'Nagpur Municipal Corp'
   });
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [backendStatus, setBackendStatus] = useState({ loading: true, online: false });
+
+  // Test live connection to Render FastAPI backend
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/`)
+      .then((res) => res.json())
+      .then((data) => {
+        setBackendStatus({ loading: false, online: true, data });
+      })
+      .catch(() => {
+        setBackendStatus({ loading: false, online: false });
+      });
+  }, []);
 
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard':
-        return <DashboardOverview onNavigate={(mod) => setActiveModule(mod)} />;
+        return <DashboardOverview onNavigate={(mod) => setActiveModule(mod)} backendUrl={BACKEND_URL} />;
       case 'zone_optimizer':
-        return <AIZoneOptimizer />;
+        return <AIZoneOptimizer backendUrl={BACKEND_URL} />;
       case 'vendor_management':
-        return <VendorManagement />;
+        return <VendorManagement backendUrl={BACKEND_URL} />;
       case 'certificate_management':
-        return <CertificateManagement />;
+        return <CertificateManagement backendUrl={BACKEND_URL} />;
       case 'mobile_inspector':
-        return <MobileInspector />;
+        return <MobileInspector backendUrl={BACKEND_URL} />;
       case 'impact_reports':
-        return <ImpactReport />;
+        return <ImpactReport backendUrl={BACKEND_URL} />;
       default:
-        return <DashboardOverview onNavigate={(mod) => setActiveModule(mod)} />;
+        return <DashboardOverview onNavigate={(mod) => setActiveModule(mod)} backendUrl={BACKEND_URL} />;
     }
   };
 
@@ -53,6 +68,7 @@ export default function App() {
           activeModule={activeModule} 
           currentUser={currentUser} 
           onLogout={() => setCurrentUser(null)} 
+          backendStatus={backendStatus}
         />
         
         <main className="module-content" style={{ flex: 1, overflowY: 'auto' }}>
