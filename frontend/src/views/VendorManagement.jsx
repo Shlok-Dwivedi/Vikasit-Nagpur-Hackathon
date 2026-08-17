@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { Users, Filter, Plus, CheckCircle, Clock, XCircle, Search, FileText } from 'lucide-react';
+import { Users, Filter, Plus, CheckCircle, Clock, Search, FileText, X } from 'lucide-react';
 import './VendorManagement.css';
 
 export default function VendorManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // New Vendor Form State
+  const [newName, setNewName] = useState('');
+  const [newStall, setNewStall] = useState('');
+  const [newCategory, setNewCategory] = useState('Perishable Produce');
+  const [newZone, setNewZone] = useState('Zone A - Market Sq');
+  const [newPhone, setNewPhone] = useState('');
 
   const [vendors, setVendors] = useState([
     {
@@ -63,6 +71,26 @@ export default function VendorManagement() {
     setVendors(vendors.map(v => v.id === id ? { ...v, status: 'approved' } : v));
   };
 
+  const handleCreateVendor = (e) => {
+    e.preventDefault();
+    const newVendorObj = {
+      id: `VV-2024-${Math.floor(100 + Math.random() * 900)}`,
+      name: newName,
+      stallName: newStall,
+      category: newCategory,
+      location: newZone,
+      phone: newPhone || '+91 98000 00000',
+      status: 'pending',
+      joinedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    };
+
+    setVendors([newVendorObj, ...vendors]);
+    setShowAddModal(false);
+    setNewName('');
+    setNewStall('');
+    setNewPhone('');
+  };
+
   const filteredVendors = vendors.filter(v => {
     const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           v.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,7 +108,7 @@ export default function VendorManagement() {
             <h2>Registered Vendor Directory & Verification</h2>
             <span className="sub-header-tag">Manage civic vending permits and approvals</span>
           </div>
-          <button className="submit-btn" style={{ padding: '10px 18px', width: 'auto' }}>
+          <button className="submit-btn" style={{ padding: '10px 18px', width: 'auto' }} onClick={() => setShowAddModal(true)}>
             <Plus size={16} />
             <span>Register New Vendor</span>
           </button>
@@ -167,6 +195,98 @@ export default function VendorManagement() {
         </table>
 
       </div>
+
+      {/* Add Vendor Modal */}
+      {showAddModal && (
+        <div className="voice-modal-overlay">
+          <div className="voice-modal-card" style={{ maxWidth: '520px' }}>
+            <div className="voice-modal-header">
+              <h3>Register New Civic Vendor</h3>
+              <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateVendor} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="form-group">
+                <label>Vendor Full Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="e.g. Ramesh Kumar"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="form-input"
+                  style={{ paddingLeft: '14px' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Stall / Business Trade Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="e.g. Ramesh Fresh Fruits"
+                  value={newStall}
+                  onChange={(e) => setNewStall(e.target.value)}
+                  className="form-input"
+                  style={{ paddingLeft: '14px' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Vending Category</label>
+                <select 
+                  value={newCategory} 
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="select-filter"
+                  style={{ width: '100%' }}
+                >
+                  <option>Perishable Produce</option>
+                  <option>Prepared Food & Snacks</option>
+                  <option>Textiles & Goods</option>
+                  <option>Beverages</option>
+                  <option>Artisanal Handicrafts</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Preferred Vending Zone</label>
+                <select 
+                  value={newZone} 
+                  onChange={(e) => setNewZone(e.target.value)}
+                  className="select-filter"
+                  style={{ width: '100%' }}
+                >
+                  <option>Zone A - Market Sq</option>
+                  <option>Zone B - VNIT Gate</option>
+                  <option>Zone C - Metro Corridor</option>
+                  <option>Zone D - Temple Premises</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Mobile Contact Number</label>
+                <input 
+                  type="tel" 
+                  required 
+                  placeholder="+91 98765 43210"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="form-input"
+                  style={{ paddingLeft: '14px' }}
+                />
+              </div>
+
+              <button type="submit" className="submit-btn" style={{ marginTop: '10px' }}>
+                <CheckCircle size={18} />
+                <span>Submit & Generate Pending Application</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
