@@ -1,0 +1,128 @@
+.cert-container {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cert-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .cert-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cert-card-preview {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid rgba(255, 153, 51, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.cert-card-preview::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 153, 51, 0.1);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.cert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.emblem-title h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ff9933;
+  letter-spacing: 0.5px;
+}
+
+.emblem-title p {
+  font-size: 0.775rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.qr-box {
+  width: 90px;
+  height: 90px;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-placeholder {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #000,
+    #000 6px,
+    #fff 6px,
+    #fff 12px
+  );
+  border-radius: 4px;
+}
+
+.cert-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.cert-field label {
+  font-size: 0.725rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.cert-field p {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 2px;
+}
+
+.cert-footer-stamp {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stamp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}

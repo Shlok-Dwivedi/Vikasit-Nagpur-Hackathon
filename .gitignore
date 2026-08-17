@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# Build & Dist Outputs
+dist/
+**/dist/
+build/
+**/build/
+*.egg-info/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Environment Files
+.env
+.env.local
+*.env
+!.env.example
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
