@@ -18,7 +18,7 @@ except ImportError:
 app = FastAPI(
     title="Viksit Vyapari Pure Dynamic REST API",
     description="100% Zero-Hardcoded Dynamic Engine for Civic Vendors, Leaflet Maps & AI Zoning",
-    version="2.1.0"
+    version="2.2.0"
 )
 
 app.add_middleware(
@@ -56,7 +56,7 @@ class ViolationReport(BaseModel):
     location: str
     inspector: Optional[str] = "Inspector-04"
 
-# 100% EMPTY STORES - NO HARDCODED SEED DATA AT ALL!
+# PURE 100% EMPTY STORES - NO HARDCODED RECORDS!
 vendors_db = []
 alerts_db = []
 violations_db = []
@@ -84,11 +84,11 @@ zones_db = [
 async def root():
     return {
         "status": "online",
-        "message": "Viksit Vyapari Pure Dynamic REST API (Zero hardcoded data).",
+        "message": "Viksit Vyapari FastAPI dynamic backend operational.",
         "active_vendors_count": len(vendors_db),
         "database": {
             "supabase_connected": bool(supabase),
-            "mode": "Supabase PostgreSQL + Dynamic Storage" if supabase else "Pure Dynamic Memory Engine"
+            "mode": "Supabase PostgreSQL + Live API Engine" if supabase else "Live Memory Engine"
         },
         "timestamp": datetime.now().isoformat()
     }
@@ -97,8 +97,8 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
-@app.delete("/api/clear-all")
-async def clear_all_data():
+@app.post("/api/reset-database")
+async def reset_database():
     global vendors_db, alerts_db, violations_db
     vendors_db = []
     alerts_db = []
@@ -106,15 +106,26 @@ async def clear_all_data():
     if supabase:
         try:
             supabase.table("vendors").delete().neq("id", "none").execute()
-        except Exception:
-            pass
-    return {"status": "success", "message": "Database completely cleared to 0 records."}
+            supabase.table("alerts").delete().neq("id", 0).execute()
+        except Exception as e:
+            print("Supabase wipe note:", e)
+    return {"status": "success", "message": "Database completely wiped to 0 vendors."}
 
 @app.get("/api/stats")
 async def get_dashboard_stats():
-    total_count = len(vendors_db)
-    approved_vendors = [v for v in vendors_db if v["status"] == "approved"]
-    pending_vendors = [v for v in vendors_db if v["status"] == "pending"]
+    # If Supabase is connected, query dynamic count from Supabase
+    current_vendors = vendors_db
+    if supabase:
+        try:
+            res = supabase.table("vendors").select("*").execute()
+            if res.data is not None:
+                current_vendors = res.data
+        except Exception:
+            pass
+
+    total_count = len(current_vendors)
+    approved_vendors = [v for v in current_vendors if v.get("status") == "approved"]
+    pending_vendors = [v for v in current_vendors if v.get("status") == "pending"]
     compliance_rate = round((len(approved_vendors) / total_count) * 100, 1) if total_count > 0 else 0.0
     
     disbursed = f"₹{round(len(approved_vendors) * 0.15, 2)} Cr" if approved_vendors else "₹0.00 Cr"
@@ -131,8 +142,17 @@ async def get_dashboard_stats():
 
 @app.get("/api/zones")
 async def get_zones():
+    current_vendors = vendors_db
+    if supabase:
+        try:
+            res = supabase.table("vendors").select("*").execute()
+            if res.data is not None:
+                current_vendors = res.data
+        except Exception:
+            pass
+
     for z in zones_db:
-        z["currentVendors"] = len([v for v in vendors_db if z["name"] in v["location"]])
+        z["currentVendors"] = len([v for v in current_vendors if z["name"] in v.get("location", "")])
     return {"status": "success", "zones": zones_db}
 
 @app.get("/api/alerts")
@@ -182,32 +202,40 @@ async def create_vendor(vendor: VendorCreate):
     alerts_db.insert(0, {
         "id": len(alerts_db) + 1,
         "type": "info",
-        "title": "New Vendor Application Registered",
-        "message": f"New application by {vendor.name} ({new_id}) for {vendor.location}.",
+        "title": "New Vendor Registered",
+        "message": f"New vendor application by {vendor.name} ({new_id}) for {vendor.location}.",
         "time": "Just now"
     })
     return {"status": "success", "message": "Vendor registered dynamically", "vendor": new_vendor}
 
 @app.put("/api/vendors/{vendor_id}/approve")
 async def approve_vendor(vendor_id: str):
+    found = False
     for v in vendors_db:
         if v["id"] == vendor_id:
             v["status"] = "approved"
             v["feePaid"] = True
             v["svanidhiTier"] = "Tier 1 Approved"
-            if supabase:
-                try:
-                    supabase.table("vendors").update({"status": "approved", "feePaid": True}).eq("id", vendor_id).execute()
-                except Exception:
-                    pass
-            alerts_db.insert(0, {
-                "id": len(alerts_db) + 1,
-                "type": "success",
-                "title": "Permit Approved",
-                "message": f"Vendor {v['name']} ({vendor_id}) permit approved by Officer.",
-                "time": "Just now"
-            })
-            return {"status": "success", "message": f"Vendor {vendor_id} approved", "vendor": v}
+            found = True
+            break
+            
+    if supabase:
+        try:
+            supabase.table("vendors").update({"status": "approved", "feePaid": True}).eq("id", vendor_id).execute()
+            found = True
+        except Exception:
+            pass
+
+    if found:
+        alerts_db.insert(0, {
+            "id": len(alerts_db) + 1,
+            "type": "success",
+            "title": "Permit Approved",
+            "message": f"Vendor ({vendor_id}) permit approved by Officer.",
+            "time": "Just now"
+        })
+        return {"status": "success", "message": f"Vendor {vendor_id} approved"}
+
     raise HTTPException(status_code=404, detail="Vendor not found")
 
 @app.post("/api/violations")
@@ -248,8 +276,17 @@ async def ai_optimize_zone(req: AIRezoneRequest):
 
 @app.get("/api/impact")
 async def get_impact_analytics():
-    total = len(vendors_db)
-    approved_list = [v for v in vendors_db if v["status"] == "approved"]
+    current_vendors = vendors_db
+    if supabase:
+        try:
+            res = supabase.table("vendors").select("*").execute()
+            if res.data is not None:
+                current_vendors = res.data
+        except Exception:
+            pass
+
+    total = len(current_vendors)
+    approved_list = [v for v in current_vendors if v.get("status") == "approved"]
     
     tier1_count = len(approved_list)
     tier2_count = int(len(approved_list) * 0.4)
@@ -274,8 +311,17 @@ async def process_voice_query(req: VoiceQueryRequest):
     query = req.transcript.lower()
     lang = req.language or "hi"
     
-    total_count = len(vendors_db)
-    approved_count = len([v for v in vendors_db if v["status"] == "approved"])
+    current_vendors = vendors_db
+    if supabase:
+        try:
+            res = supabase.table("vendors").select("*").execute()
+            if res.data is not None:
+                current_vendors = res.data
+        except Exception:
+            pass
+
+    total_count = len(current_vendors)
+    approved_count = len([v for v in current_vendors if v.get("status") == "approved"])
     pending_count = total_count - approved_count
 
     if "vendor" in query or "फेरीवाला" in query or "विक्रेता" in query:

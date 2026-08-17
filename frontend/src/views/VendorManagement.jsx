@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Filter, Plus, CheckCircle, Clock, Search, FileText, X, RefreshCw, AlertCircle } from 'lucide-react';
+import { Users, Filter, Plus, CheckCircle, Clock, Search, FileText, X, RefreshCw, Trash2, AlertCircle } from 'lucide-react';
 import './VendorManagement.css';
 
 export default function VendorManagement({ backendUrl }) {
@@ -38,6 +38,20 @@ export default function VendorManagement({ backendUrl }) {
   useEffect(() => {
     fetchVendors();
   }, [apiBackendUrl]);
+
+  // Wipe / Reset Database completely to 0
+  const handleResetDatabase = async () => {
+    if (!window.confirm("Are you sure you want to wipe all vendor records in the database to 0?")) return;
+    setLoading(true);
+    try {
+      await fetch(`${apiBackendUrl}/api/reset-database`, { method: 'POST' });
+      setVendors([]);
+    } catch (err) {
+      setVendors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Dynamic API call to approve vendor
   const handleApprove = async (id) => {
@@ -111,6 +125,10 @@ export default function VendorManagement({ backendUrl }) {
             <span className="sub-header-tag">Dynamic Database Count: {vendors.length} Vendors</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="quick-act-btn" style={{ color: '#f87171' }} onClick={handleResetDatabase} title="Wipe Database to 0">
+              <Trash2 size={16} />
+              <span>Wipe DB to 0</span>
+            </button>
             <button className="quick-act-btn" onClick={fetchVendors} title="Refresh Live Data">
               <RefreshCw size={16} className={loading ? 'spin' : ''} />
               <span>Refresh</span>
