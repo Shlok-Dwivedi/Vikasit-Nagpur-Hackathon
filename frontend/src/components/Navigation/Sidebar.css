@@ -1,5 +1,7 @@
 .sidebar {
   width: 260px;
+  min-width: 260px;
+  flex-shrink: 0;
   background: var(--sidebar-bg);
   backdrop-filter: blur(12px);
   border-right: 1px solid var(--bg-card-border);
@@ -30,6 +32,7 @@
   justify-content: center;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(255, 153, 51, 0.3);
+  flex-shrink: 0;
 }
 
 .brand-info h2 {
@@ -52,6 +55,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-y: auto;
 }
 
 .menu-section-label {
@@ -112,6 +116,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.sarvam-widget:hover {
+  transform: translateY(-2px);
 }
 
 .sarvam-icon {
@@ -123,6 +133,7 @@
   align-items: center;
   justify-content: center;
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .sarvam-text p {
