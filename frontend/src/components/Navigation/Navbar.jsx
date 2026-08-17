@@ -3,7 +3,6 @@ import { Search, Bell, LogOut, Shield, Server, Sun, Moon } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar({ activeModule, currentUser, onLogout, backendStatus }) {
-  // Theme state: default to saved theme or 'dark'
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('vv_theme') || 'dark';
   });
@@ -19,8 +18,9 @@ export default function Navbar({ activeModule, currentUser, onLogout, backendSta
 
   const titles = {
     dashboard: 'Dashboard Overview',
+    vendor_profile: 'My Vendor Profile & Unique QR',
     zone_optimizer: 'AI Zone Optimizer',
-    vendor_management: 'Vendor & Gov Management',
+    vendor_management: 'Vendor & Gov Directory',
     certificate_management: 'Digital Certificate Portal',
     mobile_inspector: 'Mobile Inspector Portal',
     impact_reports: 'Livelihood & Executive Impact'
@@ -54,7 +54,7 @@ export default function Navbar({ activeModule, currentUser, onLogout, backendSta
           <Search size={16} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Search vendor, zone ID, permit..." 
+            placeholder="Search vendor, zone ID..." 
             className="search-input"
           />
         </div>
@@ -65,11 +65,11 @@ export default function Navbar({ activeModule, currentUser, onLogout, backendSta
 
         <div className="user-profile-badge">
           <div className="profile-avatar">
-            {currentUser?.role === 'authority' ? <Shield size={14} /> : 'U'}
+            {currentUser?.role === 'authority' ? <Shield size={14} /> : 'V'}
           </div>
           <div className="profile-info">
-            <span className="profile-name">{currentUser?.name || currentUser?.email || 'Municipal Officer'}</span>
-            <span className="profile-role">{currentUser?.department || currentUser?.role?.toUpperCase() || 'CIVIC ADMIN'}</span>
+            <span className="profile-name">{currentUser?.name || currentUser?.email || 'Municipal User'}</span>
+            <span className="profile-role">{currentUser?.department || currentUser?.role?.toUpperCase() || 'CIVIC USER'}</span>
           </div>
         </div>
 

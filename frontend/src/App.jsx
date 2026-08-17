@@ -3,6 +3,7 @@ import Navbar from './components/Navigation/Navbar';
 import Sidebar from './components/Navigation/Sidebar';
 
 import DashboardOverview from './views/DashboardOverview';
+import VendorProfile from './views/VendorProfile';
 import AIZoneOptimizer from './views/AIZoneOptimizer';
 import VendorManagement from './views/VendorManagement';
 import CertificateManagement from './views/CertificateManagement';
@@ -47,7 +48,6 @@ export default function App() {
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
     localStorage.setItem('vv_user_session', JSON.stringify(userData));
-    // Reset view to dashboard on login
     setActiveModule('dashboard');
   };
 
@@ -63,7 +63,7 @@ export default function App() {
 
   // Guard against citizens accessing admin-only modules
   const isOfficer = currentUser.role === 'authority';
-  const isModuleAllowed = isOfficer || ['dashboard', 'zone_optimizer', 'certificate_management'].includes(activeModule);
+  const isModuleAllowed = isOfficer || ['dashboard', 'vendor_profile', 'zone_optimizer', 'certificate_management'].includes(activeModule);
   const safeActiveModule = isModuleAllowed ? activeModule : 'dashboard';
 
   return (
@@ -88,6 +88,9 @@ export default function App() {
         <main className="view-viewport">
           {safeActiveModule === 'dashboard' && (
             <DashboardOverview onNavigate={setActiveModule} backendUrl={BACKEND_URL} currentUser={currentUser} />
+          )}
+          {safeActiveModule === 'vendor_profile' && (
+            <VendorProfile currentUser={currentUser} backendUrl={BACKEND_URL} />
           )}
           {safeActiveModule === 'zone_optimizer' && (
             <AIZoneOptimizer backendUrl={BACKEND_URL} />

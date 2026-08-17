@@ -8,37 +8,33 @@ import {
   BarChart3, 
   Building2, 
   Mic,
-  ShieldAlert
+  UserCheck
 } from 'lucide-react';
 import './Sidebar.css';
 
 export default function Sidebar({ activeModule, setActiveModule, currentUser, onOpenVoiceModal }) {
   const isOfficer = currentUser?.role === 'authority';
 
-  // Base items visible to everyone (Citizens & Officers)
+  // Base items visible to Citizens & Vendors
   const citizenItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
-    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map, badge: 'AI Live' },
+    { id: 'vendor_profile', label: 'My Vendor Profile', icon: UserCheck, badge: 'QR Live' },
+    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map },
     { id: 'certificate_management', label: 'My Certificate', icon: FileCheck },
   ];
 
-  // Officer / Admin Only items
+  // Officer / Admin Access items
   const officerItems = [
-    { id: 'vendor_management', label: 'Vendor Management', icon: Users, adminOnly: true },
+    { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
+    { id: 'vendor_profile', label: 'My Vendor Profile', icon: UserCheck },
+    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map },
+    { id: 'vendor_management', label: 'Vendor Directory', icon: Users, adminOnly: true },
+    { id: 'certificate_management', label: 'Certificate Portal', icon: FileCheck },
     { id: 'mobile_inspector', label: 'Mobile Inspector', icon: Smartphone, adminOnly: true },
     { id: 'impact_reports', label: 'Executive Analytics', icon: BarChart3, adminOnly: true },
   ];
 
-  const menuItems = isOfficer 
-    ? [
-        { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
-        { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map, badge: 'AI Live' },
-        { id: 'vendor_management', label: 'Vendor Management', icon: Users, adminOnly: true },
-        { id: 'certificate_management', label: 'Certificate Portal', icon: FileCheck },
-        { id: 'mobile_inspector', label: 'Mobile Inspector', icon: Smartphone, adminOnly: true },
-        { id: 'impact_reports', label: 'Livelihood Impact', icon: BarChart3, adminOnly: true },
-      ]
-    : citizenItems;
+  const menuItems = isOfficer ? officerItems : citizenItems;
 
   return (
     <aside className="sidebar">
@@ -54,7 +50,7 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
 
       <nav className="sidebar-menu">
         <div className="menu-section-label">
-          {isOfficer ? 'Admin & Governance' : 'Public Services'}
+          {isOfficer ? 'Admin & Governance' : 'Vendor Services'}
         </div>
 
         {menuItems.map((item) => {
