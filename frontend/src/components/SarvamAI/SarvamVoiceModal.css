@@ -14,11 +14,11 @@
 .voice-modal-card {
   width: 100%;
   max-width: 480px;
-  background: #0f172a;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
   border-radius: 24px;
   padding: 28px;
-  box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.3);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -39,25 +39,26 @@
 .voice-modal-title h3 {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .close-btn {
   background: transparent;
-  color: #94a3b8;
+  color: var(--text-muted);
   padding: 4px;
 }
 
 .close-btn:hover {
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .lang-selector {
   display: flex;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--input-bg);
   padding: 4px;
   border-radius: 12px;
+  border: 1px solid var(--bg-card-border);
 }
 
 .lang-btn {
@@ -66,7 +67,7 @@
   border-radius: 8px;
   font-size: 0.775rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-muted);
   background: transparent;
 }
 
@@ -110,12 +111,12 @@
 }
 
 .transcript-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  border: 1px solid var(--bg-card-border);
   border-radius: 12px;
   padding: 14px;
   font-size: 0.875rem;
-  color: #cbd5e1;
+  color: var(--text-main);
   min-height: 80px;
   display: flex;
   align-items: center;
@@ -129,6 +130,6 @@
   border-radius: 12px;
   padding: 14px;
   font-size: 0.85rem;
-  color: #34d399;
+  color: #059669;
   line-height: 1.4;
 }

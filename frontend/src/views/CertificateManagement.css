@@ -18,11 +18,11 @@
 }
 
 .cert-card-preview {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: var(--bg-card);
   border: 2px solid rgba(255, 153, 51, 0.4);
   border-radius: var(--radius-lg);
   padding: 32px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
 }
@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+  border-bottom: 2px dashed var(--bg-card-border);
   padding-bottom: 20px;
   margin-bottom: 24px;
 }
@@ -57,7 +57,7 @@
 
 .emblem-title p {
   font-size: 0.775rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -70,6 +70,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
 .qr-placeholder {
@@ -93,7 +94,7 @@
 
 .cert-field label {
   font-size: 0.725rem;
-  color: #64748b;
+  color: var(--text-subtle);
   text-transform: uppercase;
   font-weight: 700;
 }
@@ -101,7 +102,7 @@
 .cert-field p {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-main);
   margin-top: 2px;
 }
 
@@ -111,18 +112,18 @@
   align-items: center;
   justify-content: space-between;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--bg-card-border);
 }
 
 .stamp-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
   padding: 6px 14px;
   border-radius: 20px;
   font-weight: 800;
   font-size: 0.8rem;
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }

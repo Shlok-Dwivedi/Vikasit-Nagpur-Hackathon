@@ -15,15 +15,17 @@ export default function MobileInspector({ backendUrl }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
+  const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
+
   // Fetch live vendors for permit verification
   useEffect(() => {
-    fetch(`${backendUrl}/api/vendors`)
+    fetch(`${apiBackendUrl}/api/vendors`)
       .then((res) => res.json())
       .then((data) => {
         if (data.vendors) setVendors(data.vendors);
       })
       .catch((err) => console.log('Inspector vendor fetch fallback:', err));
-  }, [backendUrl]);
+  }, [apiBackendUrl]);
 
   // Clean up camera stream on unmount
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function MobileInspector({ backendUrl }) {
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          facingMode: { ideal: 'environment' }, // Prefers back camera on phones
+          facingMode: { ideal: 'environment' },
           width: { ideal: 640 },
           height: { ideal: 480 }
         }
@@ -59,7 +61,6 @@ export default function MobileInspector({ backendUrl }) {
       console.warn('Camera Access Error:', err);
       setCameraError(err.message || 'Camera permission denied or camera not available.');
       setCameraActive(false);
-      // Run fallback scan simulation
       simulateScan();
     }
   };
@@ -139,7 +140,6 @@ export default function MobileInspector({ backendUrl }) {
               muted 
               style={{ width: '100%', height: '240px', objectFit: 'cover' }}
             />
-            {/* Viewfinder Laser Scanner Animation Overlay */}
             <div className="scanner-laser-line" style={{ position: 'absolute', top: '50%', left: '10%', right: '10%', height: '2px', background: '#ef4444', boxShadow: '0 0 10px #ef4444' }}></div>
             
             <div style={{ position: 'absolute', bottom: '12px', left: '0', right: '0', display: 'flex', justifyContent: 'center', gap: '10px' }}>
@@ -156,10 +156,10 @@ export default function MobileInspector({ backendUrl }) {
         ) : (
           <div className="scanner-box" onClick={startCamera}>
             <QrCode size={42} color={scanning ? '#ff9933' : '#3b82f6'} />
-            <strong style={{ fontSize: '0.9rem', color: '#f8fafc' }}>
+            <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>
               {scanning ? 'Scanning QR Code...' : 'Tap to Open Live Phone Camera'}
             </strong>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Requests camera permission & decodes vendor QR permits
             </span>
           </div>
@@ -178,10 +178,10 @@ export default function MobileInspector({ backendUrl }) {
           <div className="scan-result-card" style={{ borderColor: scanResult.status === 'VALID PERMIT' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <CheckCircle2 size={18} color={scanResult.status === 'VALID PERMIT' ? '#10b981' : '#f59e0b'} />
-              <strong style={{ color: scanResult.status === 'VALID PERMIT' ? '#34d399' : '#fbbf24', fontSize: '0.9rem' }}>{scanResult.status}</strong>
+              <strong style={{ color: scanResult.status === 'VALID PERMIT' ? '#059669' : '#d97706', fontSize: '0.9rem' }}>{scanResult.status}</strong>
             </div>
-            <p style={{ fontSize: '0.85rem', color: '#f8fafc' }}><strong>Vendor:</strong> {scanResult.name} ({scanResult.id})</p>
-            <p style={{ fontSize: '0.825rem', color: '#94a3b8' }}><strong>Zone:</strong> {scanResult.zone}</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}><strong>Vendor:</strong> {scanResult.name} ({scanResult.id})</p>
+            <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}><strong>Zone:</strong> {scanResult.zone}</p>
           </div>
         )}
 
@@ -189,7 +189,7 @@ export default function MobileInspector({ backendUrl }) {
         <form className="violation-form" onSubmit={handleLogViolation}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
             <ShieldAlert size={16} color="#ef4444" />
-            <strong style={{ fontSize: '0.85rem', color: '#f8fafc' }}>Log Field Violation</strong>
+            <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Log Field Violation</strong>
           </div>
 
           {violationLogged && (

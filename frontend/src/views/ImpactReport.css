@@ -33,12 +33,13 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.825rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .bar-bg {
   height: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  border: 1px solid var(--bg-card-border);
   border-radius: 5px;
   overflow: hidden;
 }
