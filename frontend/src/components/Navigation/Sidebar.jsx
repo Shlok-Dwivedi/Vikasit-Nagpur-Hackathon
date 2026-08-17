@@ -10,9 +10,11 @@ import {
   Mic,
   UserCheck
 } from 'lucide-react';
+import { useLanguage } from '../../lib/LanguageContext.jsx';
 import './Sidebar.css';
 
 export default function Sidebar({ activeModule, setActiveModule, currentUser, onOpenVoiceModal }) {
+  const { t } = useLanguage();
   const isOfficer = currentUser?.role === 'authority';
 
   // Base items visible to Citizens & Vendors
@@ -42,14 +44,14 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
           <Building2 size={22} />
         </div>
         <div className="brand-info">
-          <h2>Viksit Vyapari</h2>
-          <p>{isOfficer ? 'OFFICER ADMIN PORTAL' : 'CITIZEN CIVIC PORTAL'}</p>
+          <h2>{t('Viksit Vyapari', 'Viksit Vyapari')}</h2>
+          <p>{isOfficer ? t('OFFICER ADMIN PORTAL', 'OFFICER ADMIN PORTAL') : t('CITIZEN CIVIC PORTAL', 'CITIZEN CIVIC PORTAL')}</p>
         </div>
       </div>
 
       <nav className="sidebar-menu">
         <div className="menu-section-label">
-          {isOfficer ? 'Admin & Governance' : 'Vendor Services'}
+          {isOfficer ? t('Admin & Governance', 'Admin & Governance') : t('Vendor Services', 'Vendor Services')}
         </div>
 
         {menuItems.map((item) => {
@@ -62,9 +64,9 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
               onClick={() => setActiveModule(item.id)}
             >
               <Icon size={18} />
-              <span>{item.label}</span>
+              <span>{t(item.label, item.label)}</span>
               {item.adminOnly && <span className="nav-badge" style={{ background: 'rgba(5, 150, 105, 0.2)', color: '#34d399' }}>ADMIN</span>}
-              {item.badge && <span className="nav-badge">{item.badge}</span>}
+              {item.badge && <span className="nav-badge">{t(item.badge, item.badge)}</span>}
             </button>
           );
         })}
@@ -76,8 +78,8 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
             <Mic size={16} />
           </div>
           <div className="sarvam-text">
-            <p>Sarvam AI Voice</p>
-            <span>Tap for Multilingual Voice</span>
+            <p>{t('Sarvam AI Voice', 'Sarvam AI Voice')}</p>
+            <span>{t('Tap for Multilingual Voice', 'Tap for Multilingual Voice')}</span>
           </div>
         </div>
       </div>

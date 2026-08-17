@@ -10,11 +10,15 @@ import {
   ArrowRight, 
   AlertCircle, 
   CheckCircle2, 
-  Building2 
+  Building2,
+  Globe
 } from 'lucide-react';
+import { useLanguage } from '../lib/LanguageContext.jsx';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
+  const { t, language, setLanguage } = useLanguage();
+  const [langOpen, setLangOpen] = useState(false);
   const [role, setRole] = useState('citizen'); // 'citizen' or 'authority'
   const [mode, setMode] = useState('register'); // 'login' or 'register'
   
@@ -161,17 +165,55 @@ export default function Login({ onLoginSuccess }) {
   };
 
   return (
-    <div className="auth-wrapper">
+    <div className="auth-wrapper animate-fade-in-up">
+      {/* Floating Language Selection on Login Screen */}
+      <div style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 10 }}>
+        <div className="lang-dropdown-container">
+          <button type="button" className="lang-toggle-btn" onClick={() => setLangOpen(!langOpen)}>
+            <Globe size={16} color="var(--accent-primary)" />
+            <span>{language === 'en' ? 'EN' : language === 'hi' ? 'हिंदी' : 'मराठी'}</span>
+          </button>
+          {langOpen && (
+            <div className="lang-dropdown" style={{ top: 'calc(100% + 4px)' }}>
+              <button 
+                type="button" 
+                className={`lang-option ${language === 'en' ? 'active' : ''}`} 
+                onClick={() => { setLanguage('en'); setLangOpen(false); }}
+              >
+                <span>English</span>
+                {language === 'en' && <span>✓</span>}
+              </button>
+              <button 
+                type="button" 
+                className={`lang-option ${language === 'hi' ? 'active' : ''}`} 
+                onClick={() => { setLanguage('hi'); setLangOpen(false); }}
+              >
+                <span>हिंदी</span>
+                {language === 'hi' && <span>✓</span>}
+              </button>
+              <button 
+                type="button" 
+                className={`lang-option ${language === 'mr' ? 'active' : ''}`} 
+                onClick={() => { setLanguage('mr'); setLangOpen(false); }}
+              >
+                <span>मराठी</span>
+                {language === 'mr' && <span>✓</span>}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="auth-card">
         
         {/* Brand Header */}
         <div className="auth-header">
           <div className="brand-badge">
             <Building2 size={14} />
-            <span>Viksit Vyapari Civic Portal</span>
+            <span>{t('Viksit Vyapari Civic Portal', 'Viksit Vyapari Civic Portal')}</span>
           </div>
-          <h1>{mode === 'login' ? 'Sign In to Portal' : 'Create Account'}</h1>
-          <p>Role-based access for Municipal Officers & Registered Citizens</p>
+          <h1>{mode === 'login' ? t('Sign In to Portal', 'Sign In to Portal') : t('Create Account', 'Create Account')}</h1>
+          <p>{t('Role-based access for Municipal Officers & Registered Citizens', 'Role-based access for Municipal Officers & Registered Citizens')}</p>
         </div>
 
         {/* Role Selector: Citizen vs Authority */}
@@ -182,7 +224,7 @@ export default function Login({ onLoginSuccess }) {
             onClick={() => setRole('citizen')}
           >
             <User size={16} />
-            <span>Citizen / Vendor</span>
+            <span>{t('Citizen / Vendor', 'Citizen / Vendor')}</span>
           </button>
           <button
             type="button"
@@ -190,7 +232,7 @@ export default function Login({ onLoginSuccess }) {
             onClick={() => setRole('authority')}
           >
             <ShieldCheck size={16} />
-            <span>Authority / Officer</span>
+            <span>{t('Authority / Officer', 'Authority / Officer')}</span>
           </button>
         </div>
 
@@ -201,14 +243,14 @@ export default function Login({ onLoginSuccess }) {
             className={`tab-btn ${mode === 'login' ? 'active' : ''}`}
             onClick={() => { setMode('login'); setMessage(null); }}
           >
-            Sign In
+            {t('Sign In', 'Sign In')}
           </button>
           <button
             type="button"
             className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
             onClick={() => { setMode('register'); setMessage(null); }}
           >
-            Register
+            {t('Register', 'Register')}
           </button>
         </div>
 
@@ -225,7 +267,7 @@ export default function Login({ onLoginSuccess }) {
           
           {mode === 'register' && (
             <div className="form-group">
-              <label>Full Name</label>
+              <label>{t('Full Name', 'Full Name')}</label>
               <div className="input-container">
                 <User size={18} className="input-icon" />
                 <input
@@ -242,7 +284,7 @@ export default function Login({ onLoginSuccess }) {
 
           {mode === 'register' && role === 'authority' && (
             <div className="form-group">
-              <label>Department / Authority ID</label>
+              <label>{t('Department / Authority ID', 'Department / Authority ID')}</label>
               <div className="input-container">
                 <ShieldCheck size={18} className="input-icon" />
                 <input
@@ -258,7 +300,7 @@ export default function Login({ onLoginSuccess }) {
           )}
 
           <div className="form-group">
-            <label>Email Address</label>
+            <label>{t('Email Address', 'Email Address')}</label>
             <div className="input-container">
               <Mail size={18} className="input-icon" />
               <input
@@ -273,7 +315,7 @@ export default function Login({ onLoginSuccess }) {
           </div>
 
           <div className="form-group">
-            <label>Password</label>
+            <label>{t('Password', 'Password')}</label>
             <div className="input-container">
               <Lock size={18} className="input-icon" />
               <input
@@ -297,10 +339,10 @@ export default function Login({ onLoginSuccess }) {
 
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? (
-              <span>Processing...</span>
+              <span>{t('Processing...', 'Processing...')}</span>
             ) : (
               <>
-                <span>{mode === 'login' ? `Sign In as ${role === 'citizen' ? 'Citizen' : 'Officer'}` : 'Register Account'}</span>
+                <span>{mode === 'login' ? (role === 'citizen' ? t('Sign In as Citizen', 'Sign In as Citizen') : t('Sign In as Officer', 'Sign In as Officer')) : t('Register Account', 'Register Account')}</span>
                 <ArrowRight size={18} />
               </>
             )}
@@ -311,7 +353,7 @@ export default function Login({ onLoginSuccess }) {
         {/* Quick Demo Access Buttons */}
         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', marginBottom: '10px', fontWeight: '600' }}>
-            ⚡ Instant 1-Click Demo Login:
+            ⚡ {t('Instant 1-Click Demo Login:', 'Instant 1-Click Demo Login:')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <button 
@@ -321,7 +363,7 @@ export default function Login({ onLoginSuccess }) {
               style={{ fontSize: '0.78rem' }}
             >
               <ShieldCheck size={14} color="#34d399" />
-              <span>Officer Access</span>
+              <span>{t('Officer Access', 'Officer Access')}</span>
             </button>
             <button 
               type="button" 
@@ -330,7 +372,7 @@ export default function Login({ onLoginSuccess }) {
               style={{ fontSize: '0.78rem' }}
             >
               <User size={14} color="#60a5fa" />
-              <span>Citizen Access</span>
+              <span>{t('Citizen Access', 'Citizen Access')}</span>
             </button>
           </div>
         </div>

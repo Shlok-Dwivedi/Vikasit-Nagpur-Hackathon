@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import LeafletMap from '../components/Map/LeafletMap';
 import { Sparkles, Sliders, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { useLanguage } from '../lib/LanguageContext.jsx';
 import './AIZoneOptimizer.css';
 
 export default function AIZoneOptimizer({ backendUrl, currentUser }) {
+  const { t } = useLanguage();
   const [vendorDensity, setVendorDensity] = useState(65);
   const [trafficWeight, setTrafficWeight] = useState(80);
   const [optimizing, setOptimizing] = useState(false);
@@ -44,20 +46,20 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
         <div>
           <span className="ai-badge">
             <Sparkles size={14} />
-            <span>{isOfficer ? 'AI Zone Optimization Engine (FastAPI Connected)' : 'Nagpur Municipal Corp - Designated Zones'}</span>
+            <span>{isOfficer ? t('AI Zone Optimization Engine (FastAPI Connected)', 'AI Zone Optimization Engine (FastAPI Connected)') : t('Nagpur Municipal Corp - Designated Zones', 'Nagpur Municipal Corp - Designated Zones')}</span>
           </span>
           <h2 style={{ fontSize: '1.4rem', marginTop: '6px' }}>
-            {isOfficer ? 'Vending Zone Capacity & Foot-Traffic Re-Balancing' : 'Designated Vending Zones & Pedestrian Maps'}
+            {isOfficer ? t('Vending Zone Capacity & Foot-Traffic Re-Balancing', 'Vending Zone Capacity & Foot-Traffic Re-Balancing') : t('Designated Vending Zones & Pedestrian Maps', 'Designated Vending Zones & Pedestrian Maps')}
           </h2>
         </div>
       </div>
 
-      <div className="optimizer-grid">
+      <div className="optimizer-grid animate-fade-in-up">
         
         {/* Left Side: Map with Leaflet GIS & AI Heatmaps */}
         <div className="ai-card" style={{ padding: '16px' }}>
           <div className="section-header">
-            <h3>Interactive Pedestrian Traffic & Vending Density Map</h3>
+            <h3>{t('Interactive Pedestrian Traffic & Vending Density Map', 'Interactive Pedestrian Traffic & Vending Density Map')}</h3>
             <span className="sub-header-tag">Live Satellite GIS Overlay</span>
           </div>
 
@@ -68,7 +70,7 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
         {!isOfficer ? (
           <div className="ai-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="section-header">
-              <h3>Vending Zones & Safety Guidelines</h3>
+              <h3>{t('Vending Zones & Safety Guidelines', 'Vending Zones & Safety Guidelines')}</h3>
             </div>
             
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
@@ -78,7 +80,7 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
             <div className="recommendation-box" style={{ background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
               <div className="recommendation-header" style={{ color: 'var(--accent-primary)', marginBottom: '8px' }}>
                 <Sparkles size={16} style={{ marginRight: '6px' }} />
-                <span>Smart Vending Best Practices</span>
+                <span>{t('Smart Vending Best Practices', 'Smart Vending Best Practices')}</span>
               </div>
               <ul style={{ listStyle: 'none', paddingLeft: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 <li>• Vend strictly within your designated ward / yellow markers.</li>
@@ -90,13 +92,13 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
 
             <div className="status-msg success" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '8px', fontSize: '0.8rem' }}>
               <CheckCircle2 size={16} />
-              <span>Nagpur Smart City Vending System Active and Regulated.</span>
+              <span>{t('Nagpur Smart City Vending System Active and Regulated.', 'Nagpur Smart City Vending System Active and Regulated.')}</span>
             </div>
           </div>
         ) : (
           <div className="ai-card">
             <div className="section-header">
-              <h3><Sliders size={18} inline style={{ marginRight: '8px' }} /> Optimization Controls</h3>
+              <h3><Sliders size={18} inline style={{ marginRight: '8px' }} /> {t('Optimization Controls', 'Optimization Controls')}</h3>
             </div>
 
             {aiResult && (
@@ -108,7 +110,7 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
 
             <div className="slider-group">
               <div className="slider-label">
-                <span>Target Vending Density</span>
+                <span>{t('Target Vending Density', 'Target Vending Density')}</span>
                 <strong>{vendorDensity}% Capacity</strong>
               </div>
               <input 
@@ -123,7 +125,7 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
 
             <div className="slider-group">
               <div className="slider-label">
-                <span>Peak Hour Traffic Sensitivity</span>
+                <span>{t('Peak Hour Traffic Sensitivity', 'Peak Hour Traffic Sensitivity')}</span>
                 <strong>{trafficWeight}% Priority</strong>
               </div>
               <input 
@@ -139,7 +141,7 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
             <div className="recommendation-box">
               <div className="recommendation-header">
                 <Sparkles size={18} />
-                <span>FastAPI AI Model Calculation</span>
+                <span>{t('FastAPI AI Model Calculation', 'FastAPI AI Model Calculation')}</span>
               </div>
               <p>
                 {aiResult ? aiResult.recommendation : `Adjust sliders and execute model to compute real-time zone re-allocation math.`}
@@ -153,7 +155,7 @@ export default function AIZoneOptimizer({ backendUrl, currentUser }) {
 
             <button className="apply-ai-btn" onClick={handleApply} disabled={optimizing}>
               <CheckCircle2 size={18} />
-              <span>{optimizing ? 'Calculating FastAPI Model...' : 'Approve & Execute AI Re-Zoning Plan'}</span>
+              <span>{optimizing ? t('Calculating FastAPI Model...', 'Calculating FastAPI Model...') : t('Approve & Execute AI Re-Zoning Plan', 'Approve & Execute AI Re-Zoning Plan')}</span>
             </button>
           </div>
         )}

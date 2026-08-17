@@ -14,9 +14,11 @@ import {
   Mic,
   UserPlus
 } from 'lucide-react';
+import { useLanguage } from '../lib/LanguageContext.jsx';
 import './DashboardOverview.css';
 
 export default function DashboardOverview({ onNavigate, backendUrl, currentUser }) {
+  const { t } = useLanguage();
   const [vendors, setVendors] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [stats, setStats] = useState(null);
@@ -65,9 +67,9 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
           </div>
           <div className="kpi-info">
             <h3>{loading ? '...' : totalCount}</h3>
-            <p>Total Registered Vendors</p>
+            <p>{t('Total Registered Vendors', 'Total Registered Vendors')}</p>
             <div className="kpi-trend positive">
-              {pendingVendors > 0 ? `(${pendingVendors} Pending Verification)` : 'All Vendors Verified'}
+              {pendingVendors > 0 ? `(${pendingVendors} Pending Verification)` : t('All Vendors Verified', 'All Vendors Verified')}
             </div>
           </div>
         </div>
@@ -78,8 +80,8 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
           </div>
           <div className="kpi-info">
             <h3>{stats?.active_zones || 42}</h3>
-            <p>Designated Vending Zones</p>
-            <div className="kpi-trend positive">Zone A & B Active</div>
+            <p>{t('Designated Vending Zones', 'Designated Vending Zones')}</p>
+            <div className="kpi-trend positive">{t('Zone A & B Active', 'Zone A & B Active')}</div>
           </div>
         </div>
 
@@ -89,8 +91,8 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
           </div>
           <div className="kpi-info">
             <h3>{loading ? '...' : `${complianceRate}%`}</h3>
-            <p>Permit Compliance Rate</p>
-            <div className="kpi-trend positive">{approvedVendors} / {totalCount} Permits Approved</div>
+            <p>{t('Permit Compliance Rate', 'Permit Compliance Rate')}</p>
+            <div className="kpi-trend positive">{approvedVendors} / {totalCount} {t('Permits Approved', 'Permits Approved')}</div>
           </div>
         </div>
 
@@ -100,8 +102,8 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
           </div>
           <div className="kpi-info">
             <h3>{stats?.disbursed_amount || '₹0.00 Cr'}</h3>
-            <p>PM SVANidhi Micro-Credit</p>
-            <div className="kpi-trend neutral">{approvedVendors} Active Beneficiaries</div>
+            <p>{t('PM SVANidhi Micro-Credit', 'PM SVANidhi Micro-Credit')}</p>
+            <div className="kpi-trend neutral">{approvedVendors} {t('Active Beneficiaries', 'Active Beneficiaries')}</div>
           </div>
         </div>
       </div>
@@ -112,10 +114,10 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
         {/* Left Column: Interactive GIS Map */}
         <div className="map-section">
           <div className="section-header">
-            <h2>Live GIS Civic Vending Map</h2>
+            <h2>{t('Live GIS Civic Vending Map', 'Live GIS Civic Vending Map')}</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span className="sub-header-tag">Showing {vendors.length} Dynamic Vendor Pins</span>
-              <button className="action-icon-btn" onClick={loadDashboardData} title="Refresh Map & Dashboard Data">
+              <span className="sub-header-tag">{t('Showing', 'Showing')} {vendors.length} {t('Dynamic Vendor Pins', 'Dynamic Vendor Pins')}</span>
+              <button className="action-icon-btn" onClick={loadDashboardData} title={t("Refresh Map & Dashboard Data", "Refresh Map & Dashboard Data")}>
                 <RefreshCw size={14} className={loading ? 'spin' : ''} />
               </button>
             </div>
@@ -130,7 +132,7 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
           {/* Quick Actions Panel - Role Specific */}
           <div className="card-panel">
             <div className="section-header">
-              <h2>Quick Actions ({isOfficer ? 'Officer Controls' : 'Citizen Services'})</h2>
+              <h2>{t('Quick Actions', 'Quick Actions')} ({isOfficer ? t('Officer Controls', 'Officer Controls') : t('Citizen Services', 'Citizen Services')})</h2>
             </div>
             
             <div className="action-btn-grid">
@@ -138,30 +140,30 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
                 <>
                   <button className="quick-act-btn" onClick={() => onNavigate('vendor_management')}>
                     <Users size={16} />
-                    <span>Vendor Directory</span>
+                    <span>{t('Vendor Directory', 'Vendor Directory')}</span>
                   </button>
                   <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
                     <FileCheck size={16} />
-                    <span>Issue Certificate</span>
+                    <span>{t('Issue Certificate', 'Issue Certificate')}</span>
                   </button>
                   <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
                     <MapPin size={16} />
-                    <span>Re-Zone Area</span>
+                    <span>{t('Re-Zone Area', 'Re-Zone Area')}</span>
                   </button>
                   <button className="quick-act-btn" onClick={() => onNavigate('mobile_inspector')}>
                     <ShieldAlert size={16} />
-                    <span>Inspect Field</span>
+                    <span>{t('Inspect Field', 'Inspect Field')}</span>
                   </button>
                 </>
               ) : (
                 <>
                   <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
                     <FileCheck size={16} />
-                    <span>My Certificate</span>
+                    <span>{t('My Certificate', 'My Certificate')}</span>
                   </button>
                   <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
                     <MapPin size={16} />
-                    <span>View Zones</span>
+                    <span>{t('Designated Zones', 'View Zones')}</span>
                   </button>
                 </>
               )}
@@ -171,13 +173,13 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
           {/* Live Alerts Feed */}
           <div className="card-panel">
             <div className="section-header">
-              <h2>Recent Civic Activity</h2>
-              <span className="sub-header-tag">Render API Feed</span>
+              <h2>{t('Recent Civic Activity', 'Recent Civic Activity')}</h2>
+              <span className="sub-header-tag">{t('Render API Feed', 'Render API Feed')}</span>
             </div>
 
             <div className="alert-list">
               {loading ? (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading live civic feed...</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('Loading live civic feed...', 'Loading live civic feed...')}</div>
               ) : alerts.length > 0 ? (
                 alerts.map((alert) => (
                   <div key={alert.id} className={`alert-item ${alert.type}`}>
@@ -193,7 +195,7 @@ export default function DashboardOverview({ onNavigate, backendUrl, currentUser 
                   </div>
                 ))
               ) : (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No recent activity.</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('No recent activity.', 'No recent activity.')}</div>
               )}
             </div>
           </div>

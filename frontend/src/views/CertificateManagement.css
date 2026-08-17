@@ -18,25 +18,42 @@
 }
 
 .cert-card-preview {
-  background: var(--bg-card);
-  border: 1.5px solid var(--bg-card-border);
+  background: linear-gradient(135deg, var(--bg-card) 0%, #111115 100%) !important;
+  border: 2px solid rgba(99, 102, 241, 0.25) !important;
   border-radius: var(--radius-lg);
   padding: 32px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(99, 102, 241, 0.1);
   position: relative;
   overflow: hidden;
 }
 
+/* Holographic sheen animation */
 .cert-card-preview::before {
   content: '';
   position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 180px;
-  height: 180px;
-  background: rgba(99, 102, 241, 0.05);
-  border-radius: 50%;
+  top: -150%;
+  left: -150%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(45deg, 
+    transparent 43%, 
+    rgba(99, 102, 241, 0.08) 47%, 
+    rgba(16, 185, 129, 0.06) 49%, 
+    rgba(251, 191, 36, 0.08) 51%, 
+    transparent 55%
+  );
   pointer-events: none;
+  animation: holoSweep 8s linear infinite;
+  z-index: 1;
+}
+
+@keyframes holoSweep {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50%, 50%);
+  }
 }
 
 .cert-header {

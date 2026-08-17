@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FileCheck, Download, QrCode, ShieldCheck, Printer, CheckCircle, Search, User, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../lib/LanguageContext.jsx';
 import './CertificateManagement.css';
 
 export default function CertificateManagement({ backendUrl, currentUser }) {
+  const { t } = useLanguage();
   const [vendors, setVendors] = useState([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -58,10 +60,10 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
       <div className="section-header">
         <div>
           <h2 style={{ fontSize: '1.4rem' }}>
-            {isOfficer ? 'Digital Vending Certificate & QR Permit Portal' : 'My Digital Vending Permit'}
+            {isOfficer ? t('Digital Vending Certificate & QR Permit Portal', 'Digital Vending Certificate & QR Permit Portal') : t('My Digital Vending Permit', 'My Digital Vending Permit')}
           </h2>
           <span className="sub-header-tag">
-            {isOfficer ? 'Live Dynamic Smart Vending License Viewer' : 'Your Official Smart Vending License Card'}
+            {isOfficer ? t('Live Dynamic Smart Vending License Viewer', 'Live Dynamic Smart Vending License Viewer') : t('Your Official Smart Vending License Card', 'Your Official Smart Vending License Card')}
           </span>
         </div>
 
@@ -86,7 +88,7 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
 
             <button className="submit-btn" onClick={handlePrint} style={{ width: 'auto', padding: '10px 20px' }}>
               <Printer size={16} />
-              <span>Print License</span>
+              <span>{t('Print License', 'Print License')}</span>
             </button>
           </div>
         )}
@@ -95,7 +97,7 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
         {!isOfficer && activeVendor && (
           <button className="submit-btn" onClick={handlePrint} style={{ width: 'auto', padding: '10px 20px' }}>
             <Printer size={16} />
-            <span>Print Permit</span>
+            <span>{t('Print Permit', 'Print Permit')}</span>
           </button>
         )}
       </div>
@@ -112,12 +114,12 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
         <div className="cert-grid">
           
           {/* Certificate Card View */}
-          <div className="cert-card-preview">
+          <div className="cert-card-preview animate-fade-in-up">
             
             <div className="cert-header">
               <div className="emblem-title">
-                <h2>NAGPUR MUNICIPAL CORPORATION</h2>
-                <p>OFFICIAL VENDING CERTIFICATE & PERMIT</p>
+                <h2>{t('NAGPUR MUNICIPAL CORPORATION', 'NAGPUR MUNICIPAL CORPORATION')}</h2>
+                <p>{t('OFFICIAL VENDING CERTIFICATE & PERMIT', 'OFFICIAL VENDING CERTIFICATE & PERMIT')}</p>
               </div>
               
               <div className="qr-box">
@@ -127,44 +129,44 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
 
             <div className="cert-body">
               <div className="cert-field">
-                <label>Permit Holder Name</label>
+                <label>{t('Permit Holder Name', 'Permit Holder Name')}</label>
                 <p>{activeVendor?.name || 'N/A'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Vending Certificate ID</label>
+                <label>{t('Vending Certificate ID', 'Vending Certificate ID')}</label>
                 <p>{activeVendor?.id || 'N/A'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Stall Trade Name</label>
+                <label>{t('Stall Trade Name', 'Stall Trade Name')}</label>
                 <p>{activeVendor?.stallName || activeVendor?.name || 'N/A'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Permit Serial Number</label>
+                <label>{t('Permit Serial Number', 'Permit Serial Number')}</label>
                 <p>NMC/VEND/2024/{activeVendor?.id?.replace(/[^0-9]/g, '') || '0000'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Designated Vending Zone</label>
+                <label>{t('Designated Vending Zone', 'Designated Vending Zone')}</label>
                 <p>{activeVendor?.location || 'Zone A'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Authorized Vending Category</label>
+                <label>{t('Authorized Vending Category', 'Authorized Vending Category')}</label>
                 <p>{activeVendor?.category || 'General Vending'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Issue Date</label>
+                <label>{t('Issue Date', 'Issue Date')}</label>
                 <p>{activeVendor?.joinedDate || 'Today'}</p>
               </div>
 
               <div className="cert-field">
-                <label>Expiration Date</label>
+                <label>{t('Expiration Date', 'Expiration Date')}</label>
                 <p style={{ color: activeVendor?.status === 'approved' ? '#34d399' : '#f59e0b' }}>
-                  {activeVendor?.status === 'approved' ? '31 Dec 2025' : 'Pending Verification'}
+                  {activeVendor?.status === 'approved' ? '31 Dec 2025' : t('Pending Verification', 'Pending Verification')}
                 </p>
               </div>
             </div>
@@ -172,9 +174,9 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
             <div className="cert-footer-stamp">
               <div className="stamp-badge">
                 <ShieldCheck size={18} />
-                <span>{activeVendor?.status === 'approved' ? 'OFFICIALLY VERIFIED CIVIC PERMIT' : 'PENDING APPROVAL'}</span>
+                <span>{activeVendor?.status === 'approved' ? t('OFFICIALLY VERIFIED CIVIC PERMIT', 'OFFICIALLY VERIFIED CIVIC PERMIT') : t('PENDING APPROVAL', 'PENDING APPROVAL')}</span>
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', zIndex: 2 }}>
                 QR Geotag Encrypted
               </div>
             </div>
@@ -184,7 +186,7 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
           {/* Verification Info & Controls */}
           <div className="ai-card">
             <div className="section-header">
-              <h3>QR Code Security</h3>
+              <h3>{t('QR Code Security', 'QR Code Security')}</h3>
             </div>
 
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
@@ -194,15 +196,15 @@ export default function CertificateManagement({ backendUrl, currentUser }) {
             <div className="recommendation-box">
               <div className="recommendation-header">
                 <CheckCircle size={18} color={activeVendor?.status === 'approved' ? '#10b981' : '#f59e0b'} />
-                <span>License Status: {activeVendor?.status?.toUpperCase()}</span>
+                <span>{t('License Status', 'License Status')}: {activeVendor?.status?.toUpperCase()}</span>
               </div>
-              <p>Annual Renewal Fee: {activeVendor?.status === 'approved' ? 'Paid (₹500)' : 'Pending Payment'}</p>
-              <p>PM SVANidhi Linked: {activeVendor?.status === 'approved' ? 'Yes (Tier 1 Approved)' : 'Pending Approval'}</p>
+              <p>{t('Annual Renewal Fee', 'Annual Renewal Fee')}: {activeVendor?.status === 'approved' ? `${t('Paid', 'Paid')} (₹500)` : t('Pending Payment', 'Pending Payment')}</p>
+              <p>{t('PM SVANidhi Linked', 'PM SVANidhi Linked')}: {activeVendor?.status === 'approved' ? t('Yes (Tier 1 Approved)', 'Yes (Tier 1 Approved)') : t('Pending Approval', 'Pending Approval')}</p>
             </div>
 
             <button className="submit-btn" onClick={() => alert(`Downloading high-res certificate for ${activeVendor?.name}...`)}>
               <Download size={16} />
-              <span>Download High-Res Certificate</span>
+              <span>{t('Download High-Res Certificate', 'Download High-Res Certificate')}</span>
             </button>
           </div>
 

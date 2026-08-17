@@ -85,7 +85,7 @@ export default function App() {
           backendStatus={backendStatus}
         />
 
-        <main className="view-viewport">
+        <main className="view-viewport animate-fade-in-up" key={safeActiveModule}>
           {safeActiveModule === 'dashboard' && (
             <DashboardOverview onNavigate={setActiveModule} backendUrl={BACKEND_URL} currentUser={currentUser} />
           )}
