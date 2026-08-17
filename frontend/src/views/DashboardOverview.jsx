@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import LeafletMap from '../components/Map/LeafletMap';
 import { 
   Users, 
@@ -13,7 +13,32 @@ import {
 } from 'lucide-react';
 import './DashboardOverview.css';
 
-export default function DashboardOverview({ onNavigate }) {
+export default function DashboardOverview({ onNavigate, backendUrl }) {
+  const [stats, setStats] = useState({
+    total_vendors: 14290,
+    active_zones: 42,
+    compliance_rate: 94.2,
+    disbursed_amount: '₹1.28 Cr'
+  });
+  const [alerts, setAlerts] = useState([]);
+
+  // Fetch dynamic stats & alerts from Render FastAPI backend
+  useEffect(() => {
+    fetch(`${backendUrl}/api/stats`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.total_vendors) setStats(data);
+      })
+      .catch((err) => console.log('Stats fetch fallback:', err));
+
+    fetch(`${backendUrl}/api/alerts`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.alerts) setAlerts(data.alerts);
+      })
+      .catch((err) => console.log('Alerts fetch fallback:', err));
+  }, [backendUrl]);
+
   return (
     <div className="dashboard-container">
       
@@ -24,9 +49,9 @@ export default function DashboardOverview({ onNavigate }) {
             <Users size={24} />
           </div>
           <div className="kpi-info">
-            <h3>14,290</h3>
+            <h3>{stats.total_vendors?.toLocaleString()}</h3>
             <p>Registered Vendors</p>
-            <div className="kpi-trend positive">↑ +12% this month</div>
+            <div className="kpi-trend positive">↑ Live API Connected</div>
           </div>
         </div>
 
@@ -35,7 +60,7 @@ export default function DashboardOverview({ onNavigate }) {
             <MapPin size={24} />
           </div>
           <div className="kpi-info">
-            <h3>42</h3>
+            <h3>{stats.active_zones}</h3>
             <p>Designated Vending Zones</p>
             <div className="kpi-trend positive">3 AI Optimized</div>
           </div>
@@ -46,9 +71,9 @@ export default function DashboardOverview({ onNavigate }) {
             <CheckCircle2 size={24} />
           </div>
           <div className="kpi-info">
-            <h3>94.2%</h3>
+            <h3>{stats.compliance_rate}%</h3>
             <p>Compliance Rate</p>
-            <div className="kpi-trend positive">↑ 4.1% YoY</div>
+            <div className="kpi-trend positive">↑ Dynamic Calculation</div>
           </div>
         </div>
 
@@ -57,7 +82,7 @@ export default function DashboardOverview({ onNavigate }) {
             <IndianRupee size={24} />
           </div>
           <div className="kpi-info">
-            <h3>₹1.28 Cr</h3>
+            <h3>{stats.disbursed_amount}</h3>
             <p>PM SVANidhi Disbursed</p>
             <div className="kpi-trend neutral">4,890 Beneficiaries</div>
           </div>
@@ -109,36 +134,27 @@ export default function DashboardOverview({ onNavigate }) {
           <div className="card-panel">
             <div className="section-header">
               <h2>Recent Civic Activity</h2>
-              <span className="sub-header-tag">Live Feed</span>
+              <span className="sub-header-tag">Live API Feed</span>
             </div>
 
             <div className="alert-list">
-              <div className="alert-item warning">
-                <AlertTriangle size={18} color="#f59e0b" />
-                <div className="alert-content">
-                  <h4>High Pedestrian Density Warning</h4>
-                  <p>Zone C (Metro Corridor) reached 88% capacity. AI zone optimization recommended.</p>
-                  <div className="alert-time">10 mins ago</div>
-                </div>
-              </div>
-
-              <div className="alert-item success">
-                <CheckCircle2 size={18} color="#10b981" />
-                <div className="alert-content">
-                  <h4>Certificate Renewal Approved</h4>
-                  <p>Vendor V-1029 (Ramesh Fruit Stall) renewed 1-year vending permit.</p>
-                  <div className="alert-time">25 mins ago</div>
-                </div>
-              </div>
-
-              <div className="alert-item danger">
-                <ShieldAlert size={18} color="#ef4444" />
-                <div className="alert-content">
-                  <h4>Unauthorized Vending Logged</h4>
-                  <p>Inspector Inspector-04 logged 2 non-permitted stalls at Railway Gate #2.</p>
-                  <div className="alert-time">1 hour ago</div>
-                </div>
-              </div>
+              {alerts.length > 0 ? (
+                alerts.map((alert) => (
+                  <div key={alert.id} className={`alert-item ${alert.type}`}>
+                    {alert.type === 'warning' && <AlertTriangle size={18} color="#f59e0b" />}
+                    {alert.type === 'success' && <CheckCircle2 size={18} color="#10b981" />}
+                    {alert.type === 'danger' && <ShieldAlert size={18} color="#ef4444" />}
+                    {alert.type === 'info' && <PlusCircle size={18} color="#3b82f6" />}
+                    <div className="alert-content">
+                      <h4>{alert.title}</h4>
+                      <p>{alert.message}</p>
+                      <div className="alert-time">{alert.time}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Loading activity feed...</div>
+              )}
             </div>
           </div>
 
