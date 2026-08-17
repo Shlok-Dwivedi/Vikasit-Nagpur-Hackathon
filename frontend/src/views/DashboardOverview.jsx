@@ -6,7 +6,6 @@ import {
   CheckCircle2, 
   IndianRupee, 
   AlertTriangle, 
-  TrendingUp, 
   PlusCircle, 
   FileCheck, 
   ShieldAlert 
@@ -21,22 +20,30 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
     disbursed_amount: '₹1.28 Cr'
   });
   const [alerts, setAlerts] = useState([]);
+  const [vendors, setVendors] = useState([]);
 
-  // Fetch dynamic stats & alerts from Render FastAPI backend
+  // Fetch dynamic stats, alerts, and vendors from Render FastAPI backend
   useEffect(() => {
     fetch(`${backendUrl}/api/stats`)
       .then((res) => res.json())
       .then((data) => {
         if (data.total_vendors) setStats(data);
       })
-      .catch((err) => console.log('Stats fetch fallback:', err));
+      .catch((err) => console.log('Stats fetch note:', err));
 
     fetch(`${backendUrl}/api/alerts`)
       .then((res) => res.json())
       .then((data) => {
         if (data.alerts) setAlerts(data.alerts);
       })
-      .catch((err) => console.log('Alerts fetch fallback:', err));
+      .catch((err) => console.log('Alerts fetch note:', err));
+
+    fetch(`${backendUrl}/api/vendors`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.vendors) setVendors(data.vendors);
+      })
+      .catch((err) => console.log('Vendors fetch note:', err));
   }, [backendUrl]);
 
   return (
@@ -51,7 +58,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
           <div className="kpi-info">
             <h3>{stats.total_vendors?.toLocaleString()}</h3>
             <p>Registered Vendors</p>
-            <div className="kpi-trend positive">↑ Live API Connected</div>
+            <div className="kpi-trend positive">↑ Dynamic REST Engine</div>
           </div>
         </div>
 
@@ -73,7 +80,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
           <div className="kpi-info">
             <h3>{stats.compliance_rate}%</h3>
             <p>Compliance Rate</p>
-            <div className="kpi-trend positive">↑ Dynamic Calculation</div>
+            <div className="kpi-trend positive">↑ Live Calculated</div>
           </div>
         </div>
 
@@ -89,7 +96,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
         </div>
       </div>
 
-      {/* Main Content Split: Leaflet GIS Map + Live Alerts & Quick Actions */}
+      {/* Main Content Split: Dynamic Leaflet GIS Map + Live Alerts */}
       <div className="dashboard-split">
         
         {/* Left Column: Interactive GIS Map */}
@@ -99,7 +106,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
             <span className="sub-header-tag">Nagpur Municipal Zone A & B</span>
           </div>
 
-          <LeafletMap height="460px" showZones={true} />
+          <LeafletMap height="460px" showZones={true} vendors={vendors} />
         </div>
 
         {/* Right Column: Live Feed & Quick Actions */}
@@ -153,7 +160,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
                   </div>
                 ))
               ) : (
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Loading activity feed...</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading live feed...</div>
               )}
             </div>
           </div>

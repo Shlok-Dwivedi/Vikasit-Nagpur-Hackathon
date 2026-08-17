@@ -37,52 +37,9 @@ export default function LeafletMap({
   center = [21.1255, 79.0510], 
   zoom = 14,
   height = '420px',
-  showZones = true 
+  showZones = true,
+  vendors = []
 }) {
-
-  // Sample Vendor Locations in Nagpur Civic Zone
-  const vendors = [
-    {
-      id: 'V-1029',
-      name: 'Ramesh Fruit Stall',
-      category: 'Perishable Food',
-      lat: 21.1275,
-      lng: 79.0530,
-      status: 'vending',
-      zone: 'Zone A - Market Sq',
-      qrVerified: true
-    },
-    {
-      id: 'V-1088',
-      name: 'Priya Fast Food Cart',
-      category: 'Prepared Snacks',
-      lat: 21.1220,
-      lng: 79.0480,
-      status: 'vending',
-      zone: 'Zone B - VNIT Gate',
-      qrVerified: true
-    },
-    {
-      id: 'V-2041',
-      name: 'Sunil Garment Vendor',
-      category: 'Textiles',
-      lat: 21.1310,
-      lng: 79.0580,
-      status: 'restricted',
-      zone: 'Zone C - Metro Corridor',
-      qrVerified: false
-    },
-    {
-      id: 'V-3005',
-      name: 'Unauthorized Chai Counter',
-      category: 'Beverages',
-      lat: 21.1180,
-      lng: 79.0520,
-      status: 'no-vending',
-      zone: 'Strict No-Vending Buffer',
-      qrVerified: false
-    }
-  ];
 
   // Polygon Boundaries for Vending & No-Vending Zones
   const greenZonePolygon = [
@@ -103,7 +60,7 @@ export default function LeafletMap({
     <div className="map-wrapper" style={{ height }}>
       <div className="map-badge-overlay">
         <div className="map-legend">
-          <div className="legend-item"><span className="dot-green"></span> Designated Vending Zone</div>
+          <div className="legend-item"><span className="dot-green"></span> Designated Zone ({vendors.length} Vendors)</div>
           <div className="legend-item"><span className="dot-amber"></span> Time Restricted</div>
           <div className="legend-item"><span className="dot-red"></span> No-Vending Zone</div>
         </div>
@@ -153,24 +110,26 @@ export default function LeafletMap({
           </>
         )}
 
-        {/* Vendor Markers */}
+        {/* Render Dynamic Vendor Markers from Prop */}
         {vendors.map((vendor) => {
+          const lat = vendor.lat || (21.1250 + (Math.random() * 0.01 - 0.005));
+          const lng = vendor.lng || (79.0510 + (Math.random() * 0.01 - 0.005));
+          
           let icon = vendorGreenIcon;
-          if (vendor.status === 'restricted') icon = vendorAmberIcon;
-          if (vendor.status === 'no-vending') icon = vendorRedIcon;
+          if (vendor.status === 'pending') icon = vendorAmberIcon;
+          if (vendor.status === 'unauthorized') icon = vendorRedIcon;
 
           return (
-            <Marker key={vendor.id} position={[vendor.lat, vendor.lng]} icon={icon}>
+            <Marker key={vendor.id} position={[lat, lng]} icon={icon}>
               <Popup>
                 <div className="vendor-popup">
                   <h4>{vendor.name}</h4>
                   <p><strong>ID:</strong> {vendor.id}</p>
+                  <p><strong>Stall:</strong> {vendor.stallName || vendor.name}</p>
                   <p><strong>Category:</strong> {vendor.category}</p>
-                  <p><strong>Location:</strong> {vendor.zone}</p>
-                  <div className={`popup-tag ${vendor.status}`}>
-                    {vendor.status === 'vending' && 'Verified Vending Permit'}
-                    {vendor.status === 'restricted' && 'Time Restricted (6 AM - 2 PM)'}
-                    {vendor.status === 'no-vending' && 'Unauthorized / Non-Vending Zone'}
+                  <p><strong>Location:</strong> {vendor.location}</p>
+                  <div className={`popup-tag ${vendor.status === 'approved' ? 'vending' : 'restricted'}`}>
+                    {vendor.status === 'approved' ? 'Verified Vending Permit' : 'Pending Verification'}
                   </div>
                 </div>
               </Popup>
