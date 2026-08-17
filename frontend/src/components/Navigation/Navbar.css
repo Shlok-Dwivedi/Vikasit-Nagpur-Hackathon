@@ -1,8 +1,8 @@
 .navbar {
   height: 64px;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--header-bg);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--bg-card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -10,6 +10,7 @@
   position: sticky;
   top: 0;
   z-index: 90;
+  transition: background var(--transition-fast);
 }
 
 .navbar-title {
@@ -21,13 +22,13 @@
 .navbar-title h1 {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--text-main);
   letter-spacing: -0.01em;
 }
 
 .module-tag {
   background: rgba(37, 99, 235, 0.15);
-  color: #60a5fa;
+  color: #3b82f6;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 10px;
@@ -38,7 +39,7 @@
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .search-box {
@@ -50,23 +51,23 @@
 .search-icon {
   position: absolute;
   left: 12px;
-  color: #64748b;
+  color: var(--text-subtle);
   pointer-events: none;
 }
 
 .search-input {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--input-bg);
+  border: 1px solid var(--bg-card-border);
   border-radius: 20px;
   padding: 8px 14px 8px 36px;
-  color: #f8fafc;
+  color: var(--text-main);
   font-size: 0.85rem;
-  width: 220px;
+  width: 200px;
   transition: all var(--transition-fast);
 }
 
 .search-input:focus {
-  width: 280px;
+  width: 260px;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
@@ -75,18 +76,18 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  border: 1px solid var(--bg-card-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--text-muted);
   transition: all var(--transition-fast);
 }
 
 .action-icon-btn:hover {
-  color: #f8fafc;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  background: rgba(150, 150, 150, 0.15);
 }
 
 .user-profile-badge {
@@ -94,8 +95,8 @@
   align-items: center;
   gap: 10px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  border: 1px solid var(--bg-card-border);
   border-radius: 20px;
 }
 
@@ -120,12 +121,12 @@
 .profile-name {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .profile-role {
   font-size: 0.675rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .logout-btn-header {
