@@ -33,7 +33,7 @@
 
 .scanner-box {
   background: var(--input-bg);
-  border: 2px dashed #3b82f6;
+  border: 2px dashed var(--accent-primary);
   border-radius: 16px;
   padding: 32px 16px;
   text-align: center;
@@ -46,7 +46,7 @@
 }
 
 .scanner-box:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(99, 102, 241, 0.08);
 }
 
 .scan-result-card {

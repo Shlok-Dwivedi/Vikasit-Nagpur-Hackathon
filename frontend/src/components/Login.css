@@ -68,10 +68,10 @@
 .role-selector {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--input-bg);
   padding: 4px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--bg-card-border);
   margin-bottom: 24px;
 }
 
@@ -96,19 +96,19 @@
 .role-btn.active.citizen {
   background: var(--citizen-color);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .role-btn.active.authority {
   background: var(--authority-color);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
 
 /* Auth Mode Tabs */
 .auth-tabs {
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--bg-card-border);
   margin-bottom: 24px;
 }
 
@@ -165,7 +165,7 @@
 .form-input {
   width: 100%;
   padding: 12px 14px 12px 42px;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--input-bg);
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-sm);
   color: var(--text-main);
@@ -176,7 +176,7 @@
 .form-input:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-glow);
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--input-bg);
 }
 
 .toggle-password {

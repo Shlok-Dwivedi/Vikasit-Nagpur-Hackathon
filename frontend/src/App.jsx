@@ -93,10 +93,10 @@ export default function App() {
             <VendorProfile currentUser={currentUser} backendUrl={BACKEND_URL} />
           )}
           {safeActiveModule === 'zone_optimizer' && (
-            <AIZoneOptimizer backendUrl={BACKEND_URL} />
+            <AIZoneOptimizer backendUrl={BACKEND_URL} currentUser={currentUser} />
           )}
           {safeActiveModule === 'certificate_management' && (
-            <CertificateManagement backendUrl={BACKEND_URL} />
+            <CertificateManagement backendUrl={BACKEND_URL} currentUser={currentUser} />
           )}
 
           {/* Admin / Officer Only Views */}

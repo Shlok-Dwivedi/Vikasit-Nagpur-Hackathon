@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { FileCheck, Download, QrCode, ShieldCheck, Printer, CheckCircle, Search, User, AlertCircle } from 'lucide-react';
 import './CertificateManagement.css';
 
-export default function CertificateManagement({ backendUrl }) {
+export default function CertificateManagement({ backendUrl, currentUser }) {
   const [vendors, setVendors] = useState([]);
   const [selectedVendorId, setSelectedVendorId] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const isOfficer = currentUser?.role === 'authority';
   const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
 
   useEffect(() => {
@@ -16,16 +17,37 @@ export default function CertificateManagement({ backendUrl }) {
         if (data.vendors) {
           setVendors(data.vendors);
           if (data.vendors.length > 0) {
+            if (!isOfficer && currentUser?.name) {
+              const match = data.vendors.find(v => 
+                v.name?.toLowerCase().includes(currentUser.name.toLowerCase())
+              );
+              if (match) {
+                setSelectedVendorId(match.id);
+                return;
+              }
+            }
             setSelectedVendorId(data.vendors[0].id);
           }
         }
       })
       .catch((err) => console.log('Certificate vendor fetch note:', err))
       .finally(() => setLoading(false));
-  }, [apiBackendUrl]);
+  }, [apiBackendUrl, currentUser, isOfficer]);
 
   // Find active selected vendor from live array
-  const activeVendor = vendors.find(v => v.id === selectedVendorId);
+  const dbVendor = vendors.find(v => v.id === selectedVendorId);
+  const activeVendor = dbVendor || (isOfficer ? null : {
+    id: 'VV-2024-001',
+    name: currentUser?.name || 'Sharvan Kumar',
+    stallName: 'Sharvan Fresh Produce & Juices',
+    category: 'Perishable Produce',
+    location: 'Zone A - Market Sq',
+    phone: '+91 98765 43210',
+    status: 'approved',
+    joinedDate: '12 Jan 2024',
+    feePaid: true,
+    svanidhiTier: 'Tier 1 Approved (₹10,000 Disbursed)'
+  });
 
   const handlePrint = () => {
     window.print();
@@ -35,12 +57,16 @@ export default function CertificateManagement({ backendUrl }) {
     <div className="cert-container">
       <div className="section-header">
         <div>
-          <h2 style={{ fontSize: '1.4rem' }}>Digital Vending Certificate & QR Permit Portal</h2>
-          <span className="sub-header-tag">Live Dynamic Smart Vending License Viewer</span>
+          <h2 style={{ fontSize: '1.4rem' }}>
+            {isOfficer ? 'Digital Vending Certificate & QR Permit Portal' : 'My Digital Vending Permit'}
+          </h2>
+          <span className="sub-header-tag">
+            {isOfficer ? 'Live Dynamic Smart Vending License Viewer' : 'Your Official Smart Vending License Card'}
+          </span>
         </div>
 
-        {/* Vendor Selector Dropdown */}
-        {vendors.length > 0 && (
+        {/* Vendor Selector Dropdown - Officer Only */}
+        {isOfficer && vendors.length > 0 && (
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div className="filter-group">
               <User size={16} color="#94a3b8" />
@@ -64,9 +90,17 @@ export default function CertificateManagement({ backendUrl }) {
             </button>
           </div>
         )}
+
+        {/* Simple Print Button - Citizen Only */}
+        {!isOfficer && activeVendor && (
+          <button className="submit-btn" onClick={handlePrint} style={{ width: 'auto', padding: '10px 20px' }}>
+            <Printer size={16} />
+            <span>Print Permit</span>
+          </button>
+        )}
       </div>
 
-      {vendors.length === 0 ? (
+      {!activeVendor && vendors.length === 0 ? (
         <div className="table-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
           <AlertCircle size={48} color="#f59e0b" style={{ margin: '0 auto 16px auto' }} />
           <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '8px' }}>No Vendors Registered in Database Yet</h3>

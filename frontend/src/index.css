@@ -3,21 +3,21 @@
 :root {
   /* Default OLED Pure Black Dark Mode Theme */
   --bg-primary: #000000;
-  --bg-secondary: #05070c;
-  --bg-card: #0d111a;
-  --bg-card-border: rgba(255, 255, 255, 0.08);
+  --bg-secondary: #08080a;
+  --bg-card: #0c0c0e;
+  --bg-card-border: #1c1c1e;
 
-  --text-main: #ffffff;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
+  --text-main: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-subtle: #71717a;
 
-  --accent-primary: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-  --accent-glow: rgba(37, 99, 235, 0.25);
+  --accent-primary: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --accent-glow: rgba(99, 102, 241, 0.2);
 
   --citizen-color: #3b82f6;
-  --authority-color: #059669;
+  --authority-color: #10b981;
   
   --danger-color: #ef4444;
   --success-color: #10b981;
@@ -27,26 +27,26 @@
   --radius-lg: 20px;
   
   --shadow-card: 0 20px 40px -15px rgba(0, 0, 0, 0.9);
-  --header-bg: rgba(5, 7, 12, 0.9);
-  --input-bg: #080b12;
-  --sidebar-bg: #04060a;
+  --header-bg: rgba(0, 0, 0, 0.85);
+  --input-bg: #141416;
+  --sidebar-bg: #000000;
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Light Theme Variables (Clean Stitch White Theme) */
 [data-theme='light'] {
-  --bg-primary: #f7fafc;
-  --bg-secondary: #edf2f7;
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
   --bg-card: #ffffff;
-  --bg-card-border: rgba(0, 0, 0, 0.08);
+  --bg-card-border: #e4e4e7;
 
-  --text-main: #181c1e;
-  --text-muted: #4a5568;
-  --text-subtle: #718096;
+  --text-main: #09090b;
+  --text-muted: #52525b;
+  --text-subtle: #a1a1aa;
 
-  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
   --header-bg: rgba(255, 255, 255, 0.9);
-  --input-bg: #f1f5f9;
+  --input-bg: #f4f4f5;
   --sidebar-bg: #ffffff;
 }
 

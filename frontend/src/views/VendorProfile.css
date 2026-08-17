@@ -29,11 +29,11 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: var(--accent-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 8px 20px var(--accent-glow);
   flex-shrink: 0;
 }
 
@@ -82,7 +82,7 @@
 }
 
 .highlight-text {
-  color: #3b82f6 !important;
+  color: var(--accent-primary) !important;
   font-size: 1.05rem !important;
 }
 
@@ -109,8 +109,8 @@
   align-items: center;
   gap: 6px;
   margin-top: 10px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
   font-size: 0.725rem;
   font-weight: 800;
   padding: 4px 10px;

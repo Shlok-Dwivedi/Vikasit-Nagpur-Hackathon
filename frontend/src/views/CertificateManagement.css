@@ -19,7 +19,7 @@
 
 .cert-card-preview {
   background: var(--bg-card);
-  border: 2px solid rgba(255, 153, 51, 0.4);
+  border: 1.5px solid var(--bg-card-border);
   border-radius: var(--radius-lg);
   padding: 32px;
   box-shadow: var(--shadow-card);
@@ -34,7 +34,7 @@
   right: -50px;
   width: 180px;
   height: 180px;
-  background: rgba(255, 153, 51, 0.1);
+  background: rgba(99, 102, 241, 0.05);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -51,7 +51,7 @@
 .emblem-title h2 {
   font-size: 1.2rem;
   font-weight: 800;
-  color: #ff9933;
+  color: var(--accent-primary);
   letter-spacing: 0.5px;
 }
 
@@ -119,11 +119,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
   padding: 6px 14px;
   border-radius: 20px;
   font-weight: 800;
   font-size: 0.8rem;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }

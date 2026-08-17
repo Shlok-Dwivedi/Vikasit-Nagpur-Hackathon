@@ -19,16 +19,15 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
   const citizenItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'vendor_profile', label: 'My Vendor Profile', icon: UserCheck, badge: 'QR Live' },
-    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map },
     { id: 'certificate_management', label: 'My Certificate', icon: FileCheck },
+    { id: 'zone_optimizer', label: 'Designated Zones', icon: Map },
   ];
 
   // Officer / Admin Access items
   const officerItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
-    { id: 'vendor_profile', label: 'My Vendor Profile', icon: UserCheck },
-    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map },
     { id: 'vendor_management', label: 'Vendor Directory', icon: Users, adminOnly: true },
+    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map },
     { id: 'certificate_management', label: 'Certificate Portal', icon: FileCheck },
     { id: 'mobile_inspector', label: 'Mobile Inspector', icon: Smartphone, adminOnly: true },
     { id: 'impact_reports', label: 'Executive Analytics', icon: BarChart3, adminOnly: true },
