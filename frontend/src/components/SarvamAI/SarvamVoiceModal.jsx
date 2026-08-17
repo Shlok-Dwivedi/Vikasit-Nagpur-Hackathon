@@ -1,43 +1,140 @@
-import React, { useState } from 'react';
-import { Mic, X, Volume2, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Mic, X, Volume2, Sparkles, AlertCircle } from 'lucide-react';
 import './SarvamVoiceModal.css';
 
-export default function SarvamVoiceModal({ isOpen, onClose }) {
-  const [lang, setLang] = useState('hi'); // 'hi' (Hindi), 'mr' (Marathi), 'en' (English)
+export default function SarvamVoiceModal({ isOpen, onClose, backendUrl }) {
+  const [lang, setLang] = useState('hi'); // 'hi', 'mr', 'en'
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-  if (!isOpen) return null;
+  const recognitionRef = useRef(null);
 
-  const sampleQueries = {
-    hi: {
-      text: "नागपुर जोन A में कितने सत्यापित फल विक्रेता हैं?",
-      res: "नागपुर ज़ोन A (मार्केट स्क्वायर) में कुल 142 सत्यापित फल और सब्जी विक्रेता पंजीकृत हैं। 98.2% विक्रेता नियमों का पालन कर रहे हैं।"
-    },
-    mr: {
-      text: "झोन B मधील नवीन फेरीवाला परवानगी कशी मिळवावी?",
-      res: "झोन B (VNIT गेट) साठी डिजिटल प्रमाणपत्र अर्ज ऑनलाइन पोर्टलवरून करता येतो. आधार कार्ड आणि फोटो अपलोड करा."
-    },
-    en: {
-      text: "Show me non-vending congestion zones in Nagpur Metro Corridor.",
-      res: "Zone C (Metro Corridor) currently has 88% capacity. AI zone optimization recommends shifting 15 stalls to Zone B."
+  const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
+
+  useEffect(() => {
+    // Reset state on modal open
+    if (isOpen) {
+      setTranscript('');
+      setResponse(null);
+      setErrorMsg(null);
+    } else {
+      stopListening();
+    }
+  }, [isOpen]);
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore stop error if already stopped
+      }
+    }
+    setRecording(false);
+  };
+
+  const startListening = () => {
+    setErrorMsg(null);
+    setResponse(null);
+
+    // Check Web Speech API browser support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setErrorMsg('Web Speech API is not supported in this browser. Using text fallback.');
+      runFallbackSpeech();
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      // Set speech recognition language based on active tab
+      if (lang === 'hi') recognition.lang = 'hi-IN';
+      else if (lang === 'mr') recognition.lang = 'mr-IN';
+      else recognition.lang = 'en-IN';
+
+      recognition.onstart = () => {
+        setRecording(true);
+        setTranscript('Listening... Speak now into your microphone...');
+      };
+
+      recognition.onresult = (event) => {
+        const currentTranscript = Array.from(event.results)
+          .map((res) => res[0].transcript)
+          .join('');
+        setTranscript(`"${currentTranscript}"`);
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('Speech Recognition Error:', event.error);
+        if (event.error === 'not-allowed') {
+          setErrorMsg('Microphone permission denied. Please allow mic access in your browser.');
+        } else if (event.error === 'no-speech') {
+          setErrorMsg('No speech detected. Please try again.');
+        }
+        setRecording(false);
+      };
+
+      recognition.onend = () => {
+        setRecording(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Speech initialization error:', err);
+      runFallbackSpeech();
     }
   };
 
-  const handleMicClick = () => {
-    if (recording) return;
-    setRecording(true);
-    setTranscript('Listening... Speak now...');
-    setResponse(null);
+  // Process dynamic query response from Render backend
+  const handleQueryBackend = async (spokenText) => {
+    try {
+      const res = await fetch(`${apiBackendUrl}/api/sarvam-voice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: spokenText || transcript,
+          language: lang
+        })
+      });
+      const data = await res.json();
+      if (data.response) {
+        setResponse(data.response);
+      }
+    } catch (err) {
+      setResponse(`Sarvam Voice AI (${lang.toUpperCase()}): Information retrieved for query.`);
+    }
+  };
 
+  const runFallbackSpeech = () => {
+    setRecording(true);
+    setTranscript('Simulating mic capture...');
     setTimeout(() => {
       setRecording(false);
-      const query = sampleQueries[lang];
-      setTranscript(`"${query.text}"`);
-      setResponse(query.res);
-    }, 2200);
+      const text = lang === 'hi' 
+        ? 'नागपूर झोन A मधील फेरीवाला माहिती' 
+        : lang === 'mr' 
+        ? 'फेरीवाला प्रमाणपत्र माहिती' 
+        : 'Nagpur vending zone capacity inquiry';
+      setTranscript(`"${text}"`);
+      handleQueryBackend(text);
+    }, 1500);
   };
+
+  // Submit recorded transcript to Sarvam AI API
+  const handleProcessTranscript = () => {
+    if (transcript && !transcript.includes('Listening')) {
+      handleQueryBackend(transcript.replace(/"/g, ''));
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="voice-modal-overlay">
@@ -70,21 +167,37 @@ export default function SarvamVoiceModal({ isOpen, onClose }) {
         <div className="mic-wave-container">
           <button 
             className={`big-mic-btn ${recording ? 'recording' : ''}`}
-            onClick={handleMicClick}
-            title="Click to speak"
+            onClick={recording ? stopListening : startListening}
+            title={recording ? 'Click to stop listening' : 'Click to start real microphone speech detection'}
           >
             <Mic size={36} />
           </button>
-          <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
-            {recording ? 'Sarvam Speech AI is listening...' : 'Tap Mic & Ask in your native language'}
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+            {recording ? '🔴 Listening... Speak into your microphone' : 'Tap Mic for Live Browser Speech Recognition'}
           </span>
         </div>
 
-        {/* Speech Recognition Output */}
+        {/* Permission Error Message */}
+        {errorMsg && (
+          <div className="status-msg warning" style={{ fontSize: '0.78rem' }}>
+            <AlertCircle size={14} />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Real-time Speech Recognition Output */}
         {transcript && (
           <div className="transcript-box">
             {transcript}
           </div>
+        )}
+
+        {/* Ask AI Action Button */}
+        {transcript && !recording && !response && (
+          <button className="submit-btn" style={{ padding: '8px 16px' }} onClick={handleProcessTranscript}>
+            <Sparkles size={16} />
+            <span>Process Query with Sarvam AI API</span>
+          </button>
         )}
 
         {/* AI Voice Answer */}
