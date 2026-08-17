@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
-import { FileCheck, Download, QrCode, ShieldCheck, Printer, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileCheck, Download, QrCode, ShieldCheck, Printer, CheckCircle, Search, User } from 'lucide-react';
 import './CertificateManagement.css';
 
-export default function CertificateManagement() {
-  const [selectedVendor, setSelectedVendor] = useState({
+export default function CertificateManagement({ backendUrl }) {
+  const [vendors, setVendors] = useState([]);
+  const [selectedVendorId, setSelectedVendorId] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${backendUrl}/api/vendors`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.vendors && data.vendors.length > 0) {
+          setVendors(data.vendors);
+          setSelectedVendorId(data.vendors[0].id);
+        }
+      })
+      .catch((err) => console.log('Certificate vendor fetch fallback:', err))
+      .finally(() => setLoading(false));
+  }, [backendUrl]);
+
+  // Find active selected vendor or fallback
+  const activeVendor = vendors.find(v => v.id === selectedVendorId) || {
     id: 'VV-2024-001',
     name: 'Ramesh Kumar',
     stallName: 'Ramesh Fresh Fruits',
     category: 'Perishable Produce',
-    zone: 'Zone A - Market Sq',
-    validUntil: '31 Dec 2025',
-    permitNo: 'NMC/VEND/2024/0912',
-    issueDate: '12 Jan 2024'
-  });
+    location: 'Zone A - Market Sq',
+    joinedDate: '12 Jan 2024',
+    status: 'approved'
+  };
 
   const handlePrint = () => {
     window.print();
@@ -25,10 +42,30 @@ export default function CertificateManagement() {
           <h2 style={{ fontSize: '1.4rem' }}>Digital Vending Certificate & QR Permit Portal</h2>
           <span className="sub-header-tag">Authentic Smart Vending License Viewer</span>
         </div>
-        <button className="submit-btn" onClick={handlePrint} style={{ width: 'auto', padding: '10px 20px' }}>
-          <Printer size={16} />
-          <span>Print / Export PDF</span>
-        </button>
+
+        {/* Vendor Selector Dropdown */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="filter-group">
+            <User size={16} color="#94a3b8" />
+            <select 
+              className="select-filter"
+              value={selectedVendorId}
+              onChange={(e) => setSelectedVendorId(e.target.value)}
+              style={{ width: '220px' }}
+            >
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.id} - {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button className="submit-btn" onClick={handlePrint} style={{ width: 'auto', padding: '10px 20px' }}>
+            <Printer size={16} />
+            <span>Print License</span>
+          </button>
+        </div>
       </div>
 
       <div className="cert-grid">
@@ -43,56 +80,58 @@ export default function CertificateManagement() {
             </div>
             
             <div className="qr-box">
-              <div className="qr-placeholder" title="Scan to verify vendor status online"></div>
+              <div className="qr-placeholder" title={`Scan to verify ${activeVendor.name}`}></div>
             </div>
           </div>
 
           <div className="cert-body">
             <div className="cert-field">
               <label>Permit Holder Name</label>
-              <p>{selectedVendor.name}</p>
+              <p>{activeVendor.name}</p>
             </div>
 
             <div className="cert-field">
               <label>Vending Certificate ID</label>
-              <p>{selectedVendor.id}</p>
+              <p>{activeVendor.id}</p>
             </div>
 
             <div className="cert-field">
               <label>Stall Trade Name</label>
-              <p>{selectedVendor.stallName}</p>
+              <p>{activeVendor.stallName}</p>
             </div>
 
             <div className="cert-field">
               <label>Permit Serial Number</label>
-              <p>{selectedVendor.permitNo}</p>
+              <p>NMC/VEND/2024/{activeVendor.id?.replace(/[^0-9]/g, '')}</p>
             </div>
 
             <div className="cert-field">
               <label>Designated Vending Zone</label>
-              <p>{selectedVendor.zone}</p>
+              <p>{activeVendor.location}</p>
             </div>
 
             <div className="cert-field">
               <label>Authorized Vending Category</label>
-              <p>{selectedVendor.category}</p>
+              <p>{activeVendor.category}</p>
             </div>
 
             <div className="cert-field">
               <label>Issue Date</label>
-              <p>{selectedVendor.issueDate}</p>
+              <p>{activeVendor.joinedDate || '12 Jan 2024'}</p>
             </div>
 
             <div className="cert-field">
               <label>Expiration Date</label>
-              <p style={{ color: '#34d399' }}>{selectedVendor.validUntil}</p>
+              <p style={{ color: activeVendor.status === 'approved' ? '#34d399' : '#f59e0b' }}>
+                {activeVendor.status === 'approved' ? '31 Dec 2025' : 'Pending Verification'}
+              </p>
             </div>
           </div>
 
           <div className="cert-footer-stamp">
             <div className="stamp-badge">
               <ShieldCheck size={18} />
-              <span>OFFICIALLY VERIFIED CIVIC PERMIT</span>
+              <span>{activeVendor.status === 'approved' ? 'OFFICIALLY VERIFIED CIVIC PERMIT' : 'PENDING APPROVAL'}</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
               QR Geotag Encrypted
@@ -108,19 +147,19 @@ export default function CertificateManagement() {
           </div>
 
           <p style={{ fontSize: '0.875rem', color: '#94a3b8', lineHeight: '1.5' }}>
-            This smart certificate features dynamic QR verification geotagged to <strong>{selectedVendor.zone}</strong>. Field inspectors can scan the code to instantly verify authenticity via the Mobile Inspector portal.
+            This smart certificate features dynamic QR verification geotagged to <strong>{activeVendor.location}</strong>. Field inspectors can scan the code to instantly verify authenticity via the Mobile Inspector portal.
           </p>
 
           <div className="recommendation-box">
             <div className="recommendation-header">
-              <CheckCircle size={18} color="#10b981" />
-              <span>Active License Status</span>
+              <CheckCircle size={18} color={activeVendor.status === 'approved' ? '#10b981' : '#f59e0b'} />
+              <span>License Status: {activeVendor.status?.toUpperCase()}</span>
             </div>
             <p>Annual Renewal Fee: Paid (₹500)</p>
             <p>PM SVANidhi Linked: Yes (Tier 2 Approved)</p>
           </div>
 
-          <button className="submit-btn" onClick={() => alert("Downloading certificate bundle...")}>
+          <button className="submit-btn" onClick={() => alert(`Downloading high-res certificate for ${activeVendor.name}...`)}>
             <Download size={16} />
             <span>Download High-Res Certificate</span>
           </button>

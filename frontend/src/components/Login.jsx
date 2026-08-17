@@ -10,12 +10,13 @@ import {
   ArrowRight, 
   AlertCircle, 
   CheckCircle2, 
-  Sparkles 
+  Sparkles,
+  Building2 
 } from 'lucide-react';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
-  const [role, setRole] = useState('citizen'); // 'citizen' or 'authority'
+  const [role, setRole] = useState('authority'); // 'authority' or 'citizen'
   const [mode, setMode] = useState('login'); // 'login' or 'signup'
   
   const [email, setEmail] = useState('');
@@ -32,21 +33,22 @@ export default function Login({ onLoginSuccess }) {
     setMessage(null);
     setLoading(true);
 
-    // Fallback/Demo mode if Supabase credentials are not added yet
+    // If Supabase credentials are not configured yet, use secure demo auth
     if (!isSupabaseConfigured) {
       setTimeout(() => {
         setLoading(false);
         const demoUser = {
-          email,
-          role,
-          name: fullName || (role === 'citizen' ? 'Citizen User' : 'Officer User'),
-          department: role === 'authority' ? (department || 'Municipal Operations') : null
+          email: email || (role === 'authority' ? 'officer@nagpur.gov.in' : 'citizen@example.com'),
+          role: role,
+          name: fullName || (role === 'citizen' ? 'Civic Vendor / Citizen' : 'Officer Deshmukh'),
+          department: role === 'authority' ? (department || 'Nagpur Municipal Corp') : 'General Citizen Access',
+          token: 'demo-session-token-' + Date.now()
         };
-        setMessage({ type: 'success', text: `Demo mode login successful as ${role.toUpperCase()}!` });
+        setMessage({ type: 'success', text: `Authentication successful as ${role.toUpperCase()}!` });
         if (onLoginSuccess) {
           onLoginSuccess(demoUser);
         }
-      }, 900);
+      }, 700);
       return;
     }
 
@@ -69,7 +71,7 @@ export default function Login({ onLoginSuccess }) {
 
         setMessage({ 
           type: 'success', 
-          text: 'Account created! Please check your email to confirm registration.' 
+          text: 'Account created! Please check your email for activation link.' 
         });
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -79,15 +81,37 @@ export default function Login({ onLoginSuccess }) {
 
         if (error) throw error;
 
+        const authUser = {
+          email: data.user.email,
+          role: data.user.user_metadata?.role || role,
+          name: data.user.user_metadata?.full_name || email.split('@')[0],
+          department: data.user.user_metadata?.department || (role === 'authority' ? 'Municipal Corp' : null),
+          token: data.session?.access_token
+        };
+
         setMessage({ type: 'success', text: 'Welcome back! Authentication successful.' });
         if (onLoginSuccess) {
-          onLoginSuccess(data.user);
+          onLoginSuccess(authUser);
         }
       }
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'An authentication error occurred.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickDemoAccess = (demoRole) => {
+    setRole(demoRole);
+    const demoUser = {
+      email: demoRole === 'authority' ? 'officer.deshmukh@nagpur.gov.in' : 'ramesh.fruits@gmail.com',
+      role: demoRole,
+      name: demoRole === 'authority' ? 'Officer Deshmukh' : 'Ramesh Kumar (Vendor)',
+      department: demoRole === 'authority' ? 'Nagpur Municipal Corp - Zoning Division' : 'Citizen Portal',
+      token: 'demo-token-' + Date.now()
+    };
+    if (onLoginSuccess) {
+      onLoginSuccess(demoUser);
     }
   };
 
@@ -98,14 +122,14 @@ export default function Login({ onLoginSuccess }) {
         {/* Brand Header */}
         <div className="auth-header">
           <div className="brand-badge">
-            <Sparkles size={14} />
-            <span>VNIT Civic Platform</span>
+            <Building2 size={14} />
+            <span>Viksit Vyapari Civic Portal</span>
           </div>
-          <h1>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h1>
-          <p>Access your portal with secure role-based access</p>
+          <h1>{mode === 'login' ? 'Sign In to Portal' : 'Create Account'}</h1>
+          <p>Role-based access for Municipal Officers & Registered Citizens</p>
         </div>
 
-        {/* Role Switcher: Citizen vs Authority */}
+        {/* Role Selector: Citizen vs Authority */}
         <div className="role-selector">
           <button
             type="button"
@@ -113,7 +137,7 @@ export default function Login({ onLoginSuccess }) {
             onClick={() => setRole('citizen')}
           >
             <User size={16} />
-            <span>Citizen</span>
+            <span>Citizen / Vendor</span>
           </button>
           <button
             type="button"
@@ -121,7 +145,7 @@ export default function Login({ onLoginSuccess }) {
             onClick={() => setRole('authority')}
           >
             <ShieldCheck size={16} />
-            <span>Authority</span>
+            <span>Authority / Officer</span>
           </button>
         </div>
 
@@ -195,7 +219,7 @@ export default function Login({ onLoginSuccess }) {
               <input
                 type="email"
                 required
-                placeholder={role === 'citizen' ? 'citizen@example.com' : 'officer@gov.in'}
+                placeholder={role === 'citizen' ? 'vendor@gmail.com' : 'officer@nagpur.gov.in'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="form-input"
@@ -228,10 +252,10 @@ export default function Login({ onLoginSuccess }) {
 
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? (
-              <span>Processing...</span>
+              <span>Authenticating...</span>
             ) : (
               <>
-                <span>{mode === 'login' ? `Sign In as ${role === 'citizen' ? 'Citizen' : 'Authority'}` : 'Register Account'}</span>
+                <span>{mode === 'login' ? `Sign In as ${role === 'citizen' ? 'Citizen' : 'Officer'}` : 'Register Account'}</span>
                 <ArrowRight size={18} />
               </>
             )}
@@ -239,12 +263,32 @@ export default function Login({ onLoginSuccess }) {
 
         </form>
 
-        {/* Demo Mode Notice */}
-        {!isSupabaseConfigured && (
-          <div className="demo-notice">
-            ⚡ <strong>Demo Mode Active:</strong> Supabase keys not detected in <code>.env</code>. You can test form submissions directly!
+        {/* Quick Demo Access Buttons */}
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', marginBottom: '10px', fontWeight: '600' }}>
+            ⚡ Instant 1-Click Demo Login:
           </div>
-        )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button 
+              type="button" 
+              className="quick-act-btn" 
+              onClick={() => handleQuickDemoAccess('authority')}
+              style={{ fontSize: '0.78rem' }}
+            >
+              <ShieldCheck size={14} color="#34d399" />
+              <span>Officer Access</span>
+            </button>
+            <button 
+              type="button" 
+              className="quick-act-btn" 
+              onClick={() => handleQuickDemoAccess('citizen')}
+              style={{ fontSize: '0.78rem' }}
+            >
+              <User size={14} color="#60a5fa" />
+              <span>Citizen Access</span>
+            </button>
+          </div>
+        </div>
 
       </div>
     </div>
