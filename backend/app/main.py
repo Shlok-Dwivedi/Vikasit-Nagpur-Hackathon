@@ -18,7 +18,7 @@ except ImportError:
 app = FastAPI(
     title="Viksit Vyapari Pure Dynamic REST API",
     description="100% Zero-Hardcoded Dynamic Engine for Civic Vendors, Leaflet Maps & AI Zoning",
-    version="2.2.0"
+    version="2.3.0"
 )
 
 app.add_middleware(
@@ -56,7 +56,7 @@ class ViolationReport(BaseModel):
     location: str
     inspector: Optional[str] = "Inspector-04"
 
-# PURE 100% EMPTY STORES - NO HARDCODED RECORDS!
+# 100% EMPTY STORES IN MEMORY
 vendors_db = []
 alerts_db = []
 violations_db = []
@@ -88,7 +88,7 @@ async def root():
         "active_vendors_count": len(vendors_db),
         "database": {
             "supabase_connected": bool(supabase),
-            "mode": "Supabase PostgreSQL + Live API Engine" if supabase else "Live Memory Engine"
+            "mode": "Supabase PostgreSQL + Dynamic Storage" if supabase else "Pure Dynamic Memory Engine"
         },
         "timestamp": datetime.now().isoformat()
     }
@@ -105,15 +105,16 @@ async def reset_database():
     violations_db = []
     if supabase:
         try:
+            # Delete all rows from Supabase tables
             supabase.table("vendors").delete().neq("id", "none").execute()
             supabase.table("alerts").delete().neq("id", 0).execute()
+            supabase.table("violations").delete().neq("id", "none").execute()
         except Exception as e:
             print("Supabase wipe note:", e)
-    return {"status": "success", "message": "Database completely wiped to 0 vendors."}
+    return {"status": "success", "message": "All database tables wiped to 0 records."}
 
 @app.get("/api/stats")
 async def get_dashboard_stats():
-    # If Supabase is connected, query dynamic count from Supabase
     current_vendors = vendors_db
     if supabase:
         try:
