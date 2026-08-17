@@ -8,57 +8,64 @@ import {
   AlertTriangle, 
   PlusCircle, 
   FileCheck, 
-  ShieldAlert 
+  ShieldAlert,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import './DashboardOverview.css';
 
 export default function DashboardOverview({ onNavigate, backendUrl }) {
-  const [stats, setStats] = useState({
-    total_vendors: 14290,
-    active_zones: 42,
-    compliance_rate: 94.2,
-    disbursed_amount: '₹1.28 Cr'
-  });
-  const [alerts, setAlerts] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch dynamic stats, alerts, and vendors from Render FastAPI backend
+  const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [vendorRes, alertRes, statRes] = await Promise.all([
+        fetch(`${apiBackendUrl}/api/vendors`).then(r => r.json()),
+        fetch(`${apiBackendUrl}/api/alerts`).then(r => r.json()),
+        fetch(`${apiBackendUrl}/api/stats`).then(r => r.json())
+      ]);
+
+      if (vendorRes.vendors) setVendors(vendorRes.vendors);
+      if (alertRes.alerts) setAlerts(alertRes.alerts);
+      if (statRes) setStats(statRes);
+    } catch (err) {
+      console.warn('Dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch(`${backendUrl}/api/stats`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.total_vendors) setStats(data);
-      })
-      .catch((err) => console.log('Stats fetch note:', err));
+    loadDashboardData();
+  }, [apiBackendUrl]);
 
-    fetch(`${backendUrl}/api/alerts`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.alerts) setAlerts(data.alerts);
-      })
-      .catch((err) => console.log('Alerts fetch note:', err));
-
-    fetch(`${backendUrl}/api/vendors`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.vendors) setVendors(data.vendors);
-      })
-      .catch((err) => console.log('Vendors fetch note:', err));
-  }, [backendUrl]);
+  // Dynamically calculate live metrics from vendors array
+  const totalCount = vendors.length;
+  const approvedVendors = vendors.filter(v => v.status === 'approved').length;
+  const pendingVendors = vendors.filter(v => v.status === 'pending').length;
+  const complianceRate = totalCount > 0 ? ((approvedVendors / totalCount) * 100).toFixed(1) : '100.0';
 
   return (
     <div className="dashboard-container">
       
-      {/* Top Stat KPIs */}
+      {/* Top Stat KPIs (Dynamic Data) */}
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-icon saffron">
             <Users size={24} />
           </div>
           <div className="kpi-info">
-            <h3>{stats.total_vendors?.toLocaleString()}</h3>
-            <p>Registered Vendors</p>
-            <div className="kpi-trend positive">↑ Dynamic REST Engine</div>
+            <h3>{loading ? '...' : totalCount}</h3>
+            <p>Total Registered Vendors</p>
+            <div className="kpi-trend positive">
+              {pendingVendors > 0 ? `(${pendingVendors} Pending Verification)` : 'All Vendors Verified'}
+            </div>
           </div>
         </div>
 
@@ -67,9 +74,9 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
             <MapPin size={24} />
           </div>
           <div className="kpi-info">
-            <h3>{stats.active_zones}</h3>
+            <h3>{stats?.active_zones || 42}</h3>
             <p>Designated Vending Zones</p>
-            <div className="kpi-trend positive">3 AI Optimized</div>
+            <div className="kpi-trend positive">Zone A & B Active</div>
           </div>
         </div>
 
@@ -78,9 +85,9 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
             <CheckCircle2 size={24} />
           </div>
           <div className="kpi-info">
-            <h3>{stats.compliance_rate}%</h3>
-            <p>Compliance Rate</p>
-            <div className="kpi-trend positive">↑ Live Calculated</div>
+            <h3>{loading ? '...' : `${complianceRate}%`}</h3>
+            <p>Permit Compliance Rate</p>
+            <div className="kpi-trend positive">{approvedVendors} / {totalCount} Permits Approved</div>
           </div>
         </div>
 
@@ -89,9 +96,9 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
             <IndianRupee size={24} />
           </div>
           <div className="kpi-info">
-            <h3>{stats.disbursed_amount}</h3>
-            <p>PM SVANidhi Disbursed</p>
-            <div className="kpi-trend neutral">4,890 Beneficiaries</div>
+            <h3>{stats?.disbursed_amount || '₹1.28 Cr'}</h3>
+            <p>PM SVANidhi Micro-Credit</p>
+            <div className="kpi-trend neutral">{approvedVendors} Active Beneficiaries</div>
           </div>
         </div>
       </div>
@@ -103,7 +110,12 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
         <div className="map-section">
           <div className="section-header">
             <h2>Live GIS Civic Vending Map</h2>
-            <span className="sub-header-tag">Nagpur Municipal Zone A & B</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="sub-header-tag">Showing {vendors.length} Dynamic Vendor Pins</span>
+              <button className="action-icon-btn" onClick={loadDashboardData} title="Refresh Map & Dashboard Data">
+                <RefreshCw size={14} className={loading ? 'spin' : ''} />
+              </button>
+            </div>
           </div>
 
           <LeafletMap height="460px" showZones={true} vendors={vendors} />
@@ -141,11 +153,13 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
           <div className="card-panel">
             <div className="section-header">
               <h2>Recent Civic Activity</h2>
-              <span className="sub-header-tag">Live API Feed</span>
+              <span className="sub-header-tag">Render API Feed</span>
             </div>
 
             <div className="alert-list">
-              {alerts.length > 0 ? (
+              {loading ? (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading live civic feed...</div>
+              ) : alerts.length > 0 ? (
                 alerts.map((alert) => (
                   <div key={alert.id} className={`alert-item ${alert.type}`}>
                     {alert.type === 'warning' && <AlertTriangle size={18} color="#f59e0b" />}
@@ -160,7 +174,7 @@ export default function DashboardOverview({ onNavigate, backendUrl }) {
                   </div>
                 ))
               ) : (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading live feed...</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No recent activity.</div>
               )}
             </div>
           </div>
