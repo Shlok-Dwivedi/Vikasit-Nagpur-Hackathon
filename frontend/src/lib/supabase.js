@@ -1,16 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Check if credentials are properly set up
+// Clean and sanitize environment variables (strip whitespace and trailing slashes)
+export const supabaseUrl = rawUrl.trim().replace(/\/+$/, '');
+export const supabaseAnonKey = rawKey.trim();
+
+// Verify credentials validity
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
   supabaseAnonKey && 
+  supabaseUrl.startsWith('http') &&
   !supabaseUrl.includes('your-supabase-project')
 );
 
-// Initialize real client if configured, otherwise export null
+// Initialize Supabase JS Client with sanitized parameters
 export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    })
   : null;
