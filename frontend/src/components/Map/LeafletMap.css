@@ -1,0 +1,123 @@
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md, 12px);
+  z-index: 1;
+}
+
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.map-badge-overlay {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot-green {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.dot-red {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.dot-amber {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+/* Custom leaflet popup overrides */
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px !important;
+}
+
+.leaflet-popup-tip {
+  background: #1e293b !important;
+}
+
+.vendor-popup {
+  padding: 4px;
+}
+
+.vendor-popup h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #38bdf8;
+}
+
+.vendor-popup p {
+  font-size: 0.825rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.popup-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.725rem;
+  font-weight: 700;
+}
+
+.popup-tag.vending {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.popup-tag.restricted {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.popup-tag.no-vending {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
