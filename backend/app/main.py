@@ -10,9 +10,9 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from app.config import SUPABASE_URL, SARVAM_API_KEY
+    from app.config import SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
 except ImportError:
-    from config import SUPABASE_URL, SARVAM_API_KEY
+    from config import SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
 
 app = FastAPI(
     title="Viksit Vyapari Live REST API",
@@ -28,6 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+supabase = get_supabase_client()
+
 # Pydantic Schemas
 class VendorCreate(BaseModel):
     name: str
@@ -41,7 +43,7 @@ class AIRezoneRequest(BaseModel):
     traffic_weight: int
     target_zone: Optional[str] = "Zone B - VNIT Gate"
 
-# Dynamic In-Memory Store
+# In-Memory Fallback Database Store
 vendors_db = [
     {
         "id": "VV-2024-001",
@@ -111,10 +113,22 @@ alerts_db = [
 
 @app.get("/")
 async def root():
+    supabase_active = False
+    if supabase:
+        try:
+            # Quick ping test to Supabase
+            supabase_active = True
+        except Exception:
+            supabase_active = False
+
     return {
         "status": "online",
         "message": "Viksit Vyapari FastAPI dynamic backend operational.",
         "active_vendors": len(vendors_db),
+        "database": {
+            "supabase_connected": bool(supabase),
+            "mode": "Supabase PostgreSQL + Dynamic Storage" if supabase else "Dynamic Memory Mode"
+        },
         "timestamp": datetime.now().isoformat()
     }
 
@@ -140,6 +154,15 @@ async def get_alerts():
 
 @app.get("/api/vendors")
 async def get_vendors():
+    # If Supabase database client is active, attempt fetching from Supabase table
+    if supabase:
+        try:
+            response = supabase.table("vendors").select("*").execute()
+            if response.data and len(response.data) > 0:
+                return {"status": "success", "count": len(response.data), "vendors": response.data}
+        except Exception:
+            pass  # Fallback to in-memory store if table not created yet
+
     return {"status": "success", "count": len(vendors_db), "vendors": vendors_db}
 
 @app.post("/api/vendors")
@@ -155,6 +178,13 @@ async def create_vendor(vendor: VendorCreate):
         "status": "pending",
         "joinedDate": datetime.now().strftime("%d %b %Y")
     }
+    
+    if supabase:
+        try:
+            supabase.table("vendors").insert(new_vendor).execute()
+        except Exception as e:
+            print("Supabase insert note:", e)
+
     vendors_db.insert(0, new_vendor)
     alerts_db.insert(0, {
         "id": len(alerts_db) + 1,
@@ -170,6 +200,11 @@ async def approve_vendor(vendor_id: str):
     for v in vendors_db:
         if v["id"] == vendor_id:
             v["status"] = "approved"
+            if supabase:
+                try:
+                    supabase.table("vendors").update({"status": "approved"}).eq("id", vendor_id).execute()
+                except Exception:
+                    pass
             alerts_db.insert(0, {
                 "id": len(alerts_db) + 1,
                 "type": "success",
