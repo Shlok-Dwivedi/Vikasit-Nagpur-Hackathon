@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Filter, Plus, CheckCircle, Clock, Search, FileText, X, RefreshCw } from 'lucide-react';
+import { Users, Filter, Plus, CheckCircle, Clock, Search, FileText, X, RefreshCw, AlertCircle } from 'lucide-react';
 import './VendorManagement.css';
 
 export default function VendorManagement({ backendUrl }) {
@@ -17,11 +17,13 @@ export default function VendorManagement({ backendUrl }) {
   const [newPhone, setNewPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
+
   // Fetch vendors dynamically from backend REST API
   const fetchVendors = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${backendUrl}/api/vendors`);
+      const res = await fetch(`${apiBackendUrl}/api/vendors`);
       const data = await res.json();
       if (data.vendors) {
         setVendors(data.vendors);
@@ -35,12 +37,12 @@ export default function VendorManagement({ backendUrl }) {
 
   useEffect(() => {
     fetchVendors();
-  }, [backendUrl]);
+  }, [apiBackendUrl]);
 
   // Dynamic API call to approve vendor
   const handleApprove = async (id) => {
     try {
-      const res = await fetch(`${backendUrl}/api/vendors/${id}/approve`, {
+      const res = await fetch(`${apiBackendUrl}/api/vendors/${id}/approve`, {
         method: 'PUT'
       });
       const data = await res.json();
@@ -48,7 +50,6 @@ export default function VendorManagement({ backendUrl }) {
         setVendors(vendors.map(v => v.id === id ? { ...v, status: 'approved' } : v));
       }
     } catch (err) {
-      // Fallback local update
       setVendors(vendors.map(v => v.id === id ? { ...v, status: 'approved' } : v));
     }
   };
@@ -66,7 +67,7 @@ export default function VendorManagement({ backendUrl }) {
     };
 
     try {
-      const res = await fetch(`${backendUrl}/api/vendors`, {
+      const res = await fetch(`${apiBackendUrl}/api/vendors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -76,7 +77,6 @@ export default function VendorManagement({ backendUrl }) {
         setVendors([data.vendor, ...vendors]);
       }
     } catch (err) {
-      // Fallback state update
       const fallbackObj = {
         id: `VV-2024-${Math.floor(100 + Math.random() * 900)}`,
         ...payload,
@@ -108,7 +108,7 @@ export default function VendorManagement({ backendUrl }) {
         <div className="section-header">
           <div>
             <h2>Registered Vendor Directory & Verification</h2>
-            <span className="sub-header-tag">Live REST API Connected to Render Backend</span>
+            <span className="sub-header-tag">Dynamic Database Count: {vendors.length} Vendors</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="quick-act-btn" onClick={fetchVendors} title="Refresh Live Data">
@@ -152,8 +152,20 @@ export default function VendorManagement({ backendUrl }) {
 
         {/* Table View */}
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            Loading dynamic vendors from FastAPI backend...
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Fetching dynamic database records...
+          </div>
+        ) : vendors.length === 0 ? (
+          <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+            <AlertCircle size={40} color="#f59e0b" style={{ margin: '0 auto 12px auto' }} />
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '6px' }}>Database is Empty (0 Vendors)</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+              Click <strong>Register New Vendor</strong> above to create your first dynamic vendor record and see the Leaflet map and dashboard populate live!
+            </p>
+            <button className="submit-btn" style={{ width: 'auto', padding: '10px 24px', margin: '0 auto' }} onClick={() => setShowAddModal(true)}>
+              <Plus size={16} />
+              <span>Register First Vendor Now</span>
+            </button>
           </div>
         ) : (
           <table className="vendor-table">
@@ -174,8 +186,8 @@ export default function VendorManagement({ backendUrl }) {
                   <td><strong>{vendor.id}</strong></td>
                   <td>
                     <div>
-                      <strong style={{ color: '#f8fafc' }}>{vendor.name}</strong>
-                      <div style={{ fontSize: '0.775rem', color: '#94a3b8' }}>{vendor.stallName}</div>
+                      <strong style={{ color: 'var(--text-main)' }}>{vendor.name}</strong>
+                      <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>{vendor.stallName}</div>
                     </div>
                   </td>
                   <td>{vendor.category}</td>
@@ -294,7 +306,7 @@ export default function VendorManagement({ backendUrl }) {
 
               <button type="submit" className="submit-btn" style={{ marginTop: '10px' }} disabled={submitting}>
                 <CheckCircle size={18} />
-                <span>{submitting ? 'Registering in Backend...' : 'Submit & Register to Live Backend'}</span>
+                <span>{submitting ? 'Registering in Database...' : 'Submit & Create Dynamic Vendor'}</span>
               </button>
             </form>
           </div>
