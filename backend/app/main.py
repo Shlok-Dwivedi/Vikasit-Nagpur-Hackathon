@@ -1,6 +1,15 @@
+import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import SUPABASE_URL, SARVAM_API_KEY
+
+# Ensure package imports resolve properly on deployment servers
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from app.config import SUPABASE_URL, SARVAM_API_KEY
+except ImportError:
+    from config import SUPABASE_URL, SARVAM_API_KEY
 
 app = FastAPI(
     title="VNIT Hackathon Backend API",
@@ -8,10 +17,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Middleware allowing frontend requests
+# CORS Middleware allowing all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
