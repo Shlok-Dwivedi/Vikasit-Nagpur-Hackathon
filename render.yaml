@@ -3,9 +3,11 @@ services:
     name: vikasit-nagpur-backend
     env: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
