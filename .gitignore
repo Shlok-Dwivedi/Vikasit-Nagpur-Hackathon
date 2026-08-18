@@ -1,31 +1,32 @@
-# Node dependencies
-node_modules/
-frontend/node_modules/
+# CCTV videos
+backend/app/data/zone_a/*.mp4
+backend/app/data/zone_b/*.mp4
+backend/app/data/zone_c/*.mp4
+backend/app/data/zone_d/*.mp4
 
-# Build output
-dist/
-frontend/dist/
+# Generated CV outputs
+backend/app/data/zone_a/*.jpg
+backend/app/data/zone_a/detected.mp4
+backend/app/data/zone_a/tracked_people.mp4
+backend/app/data/zone_a/footfall.mp4
 
-# Python cache & virtual environments
+# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
-env/
-.pytest_cache/
 
-# Environment files
+# Node
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+
+# Environment / secrets
 .env
-.env.local
+.env.*
 
-# Media & Model files
-*.mp4
-*.mov
-*.avi
+# Model weights
 *.pt
-
-# OS / IDE
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
