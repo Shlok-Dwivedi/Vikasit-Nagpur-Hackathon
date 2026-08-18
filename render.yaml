@@ -1,4 +1,5 @@
 services:
+  # ── BACKEND: FastAPI ─────────────────────────────────────────
   - type: web
     name: vikasit-nagpur-backend
     env: python
@@ -7,12 +8,37 @@ services:
     startCommand: PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.8
+        value: "3.11.8"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: SARVAM_API_KEY
+      - key: OFFICER_PASSKEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FOOTFALL_BASELINE
+        value: ""
+      - key: NOTIFICATION_WEBHOOK_URL
+        value: ""
+
+  # ── FRONTEND: Vite Static Site ───────────────────────────────
+  - type: web
+    name: vikasit-nagpur-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_BACKEND_URL
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
         sync: false
