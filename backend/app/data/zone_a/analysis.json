@@ -1,0 +1,9 @@
+{
+    "zone_id": "ZONE_A",
+    "frames_analyzed": 20,
+    "average_people": 49.45,
+    "peak_people": 54,
+    "average_vehicles": 0.0,
+    "peak_vehicles": 0,
+    "congestion_score": 91
+}

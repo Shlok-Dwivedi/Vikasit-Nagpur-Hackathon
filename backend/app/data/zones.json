@@ -1,0 +1,44 @@
+{
+  "zones": [
+    {
+      "id": "ZONE-B",
+      "name": "Zone B – VNIT Gate",
+      "capacity": 35,
+      "activeVendors": 31,
+      "customerAccess": 8.4,
+      "livelihoodPotential": 8.1,
+      "baselineFootfall": 2140,
+      "operatingHours": "7:00 AM – 9:00 PM",
+      "validUntil": "17 Aug 2027",
+      "activity": [1680, 1840, 1910, 2050, 2210, 2480, 2140],
+      "vendorActivity": [27, 29, 30, 30, 32, 34, 31]
+    },
+    {
+      "id": "ZONE-A",
+      "name": "Zone A – Futala",
+      "capacity": 40,
+      "activeVendors": 33,
+      "customerAccess": 8.8,
+      "livelihoodPotential": 8.6,
+      "baselineFootfall": 2480
+    },
+    {
+      "id": "ZONE-C",
+      "name": "Zone C – Sitabuldi",
+      "capacity": 38,
+      "activeVendors": 36,
+      "customerAccess": 9.1,
+      "livelihoodPotential": 8.7,
+      "baselineFootfall": 2720
+    },
+    {
+      "id": "ZONE-D",
+      "name": "Zone D – Dharampeth",
+      "capacity": 32,
+      "activeVendors": 27,
+      "customerAccess": 8.6,
+      "livelihoodPotential": 8.4,
+      "baselineFootfall": 2310
+    }
+  ]
+}

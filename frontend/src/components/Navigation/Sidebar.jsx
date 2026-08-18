@@ -6,14 +6,14 @@ import {
   FileCheck, 
   Smartphone, 
   BarChart3, 
+  AlertTriangle,
   Building2, 
-  Mic,
   UserCheck
 } from 'lucide-react';
 import { useLanguage } from '../../lib/LanguageContext.jsx';
 import './Sidebar.css';
 
-export default function Sidebar({ activeModule, setActiveModule, currentUser, onOpenVoiceModal }) {
+export default function Sidebar({ activeModule, setActiveModule, currentUser }) {
   const { t } = useLanguage();
   const isOfficer = currentUser?.role === 'authority';
 
@@ -22,16 +22,17 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'vendor_profile', label: 'My Vendor Profile', icon: UserCheck, badge: 'QR Live' },
     { id: 'certificate_management', label: 'My Certificate', icon: FileCheck },
-    { id: 'zone_optimizer', label: 'Designated Zones', icon: Map },
+    { id: 'zone_optimizer', label: 'Current Zone', icon: Map },
   ];
 
   // Officer / Admin Access items
   const officerItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'vendor_management', label: 'Vendor Directory', icon: Users, adminOnly: true },
-    { id: 'zone_optimizer', label: 'AI Zone Optimizer', icon: Map },
+    { id: 'zone_optimizer', label: 'Current Zone', icon: Map },
     { id: 'certificate_management', label: 'Certificate Portal', icon: FileCheck },
     { id: 'mobile_inspector', label: 'Mobile Inspector', icon: Smartphone, adminOnly: true },
+    { id: 'enforcement_intel', label: 'Enforcement Intel', icon: AlertTriangle, adminOnly: true },
     { id: 'impact_reports', label: 'Executive Analytics', icon: BarChart3, adminOnly: true },
   ];
 
@@ -71,18 +72,6 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser, on
           );
         })}
       </nav>
-
-      <div className="sidebar-footer">
-        <div className="sarvam-widget" style={{ cursor: 'pointer' }} onClick={onOpenVoiceModal}>
-          <div className="sarvam-icon">
-            <Mic size={16} />
-          </div>
-          <div className="sarvam-text">
-            <p>{t('Sarvam AI Voice', 'Sarvam AI Voice')}</p>
-            <span>{t('Tap for Multilingual Voice', 'Tap for Multilingual Voice')}</span>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

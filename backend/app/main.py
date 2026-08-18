@@ -1,37 +1,36 @@
 import os
 import sys
-import random
-from fastapi import FastAPI, HTTPException
+import hmac
+import json
+import secrets
+import uuid
+from pathlib import Path
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
-# Ensure package imports resolve properly on deployment servers
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from app.config import SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
+    from app.config import FOOTFALL_BASELINE, OFFICER_PASSKEY, SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
     from app.footfall_fusion import FootfallFusionService
-    from app.pipelines.zone_optimizer import AIVendingZoneOptimizerPipeline
-    from app.pipelines.impact_simulator import WhatIfImpactSimulatorPipeline
-    from app.pipelines.footfall_intelligence import FootfallIntelligencePipeline
-    from app.pipelines.enforcement_zoning import EnforcementToPermanentZoningPipeline
-    from app.pipelines.livelihood_tracker import VendorCertificationLivelihoodPipeline
+    from app.opencv_service import OpenCVImageError, opencv_service
+    from app.pipelines.registry import PipelineRegistry
+    from app.pipelines.executor import DynamicPipelineExecutor
     from app.pipelines.langgraph_orchestrator import LangGraphAgenticOrchestrator
 except ImportError:
-    from config import SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
+    from config import FOOTFALL_BASELINE, OFFICER_PASSKEY, SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
     from footfall_fusion import FootfallFusionService
-    from pipelines.zone_optimizer import AIVendingZoneOptimizerPipeline
-    from pipelines.impact_simulator import WhatIfImpactSimulatorPipeline
-    from pipelines.footfall_intelligence import FootfallIntelligencePipeline
-    from pipelines.enforcement_zoning import EnforcementToPermanentZoningPipeline
-    from pipelines.livelihood_tracker import VendorCertificationLivelihoodPipeline
+    from opencv_service import OpenCVImageError, opencv_service
+    from pipelines.registry import PipelineRegistry
+    from pipelines.executor import DynamicPipelineExecutor
     from pipelines.langgraph_orchestrator import LangGraphAgenticOrchestrator
 
 app = FastAPI(
     title="Viksit Vyapari LangGraph Multi-Agent API",
-    description="Full-stack AI Engine supporting LangGraph Multi-Agent Orchestration and 5 Core Agentic Pipelines",
+    description="Full-stack AI Engine supporting Dynamic Pipeline Architecture and 5 Core Agentic Pipelines",
     version="3.5.0"
 )
 
@@ -44,27 +43,28 @@ app.add_middleware(
 )
 
 supabase = get_supabase_client()
-fusion_service = FootfallFusionService()
+fusion_service = FootfallFusionService(dataset_baseline=FOOTFALL_BASELINE)
 
-# Instantiate Pipelines & LangGraph Orchestrator
-pipeline1_zone_optimizer = AIVendingZoneOptimizerPipeline(fusion_service)
-pipeline2_impact_simulator = WhatIfImpactSimulatorPipeline()
-pipeline3_footfall_intel = FootfallIntelligencePipeline(fusion_service)
-pipeline4_enforcement_zoning = EnforcementToPermanentZoningPipeline()
-pipeline5_livelihood_tracker = VendorCertificationLivelihoodPipeline()
+# Instantiate Dynamic Pipeline Framework Architecture
+pipeline_registry = PipelineRegistry()
+dynamic_executor = DynamicPipelineExecutor(registry=pipeline_registry, fusion_service=fusion_service)
 langgraph_orchestrator = LangGraphAgenticOrchestrator()
 
-# Pydantic Schemas
+# Pydantic Request Schemas
 class LangGraphRunRequest(BaseModel):
-    location_id: Optional[str] = "ZONE-A"
-    target_vendors: Optional[int] = 50
-    violations_count: Optional[int] = 4
+    location_id: str
+    target_vendors: int
+    violations_count: int
+    cv_count: float
+    baseline_income: float
+    current_income: float
 
 class OfficerAuthRequest(BaseModel):
     badge_key: str
     officer_id: str
 
 class VendorCreate(BaseModel):
+    id: Optional[str] = None
     name: str
     stallName: str
     category: str
@@ -74,217 +74,239 @@ class VendorCreate(BaseModel):
     lng: Optional[float] = None
 
 class ZoneOptimizeRequest(BaseModel):
-    location_id: Optional[str] = "ZONE-A"
-    target_vendors: Optional[int] = 50
+    location_id: str
+    target_vendors: int
+    cv_count: Optional[float] = None
+    cv_confidence: Optional[float] = 0.85
 
 class AIRezoneRequest(BaseModel):
-    vendor_density: int
-    traffic_weight: int
-    target_zone: Optional[str] = "Zone B - VNIT Gate"
+    current_zone_id: str
+    target_zone_id: str
 
 class FootfallFusionRequest(BaseModel):
-    cv_count: Optional[float] = 523.0
+    cv_count: float
     cv_confidence: Optional[float] = 0.85
     frame_quality: Optional[float] = 0.90
 
 class EnforcementHotspotRequest(BaseModel):
     location: str
     violations_count: int
+    cv_count: float
 
 class LivelihoodTrackerRequest(BaseModel):
     vendor_id: str
     vendor_name: str
-    baseline_income: Optional[float] = 12400.0
-    current_income: Optional[float] = 15920.0
+    baseline_income: float
+    current_income: float
 
-class VoiceQueryRequest(BaseModel):
-    transcript: str
-    language: Optional[str] = "hi"
+class IncomeUpdateRequest(BaseModel):
+    baseline_income: float
+    current_income: float
 
 class ViolationReport(BaseModel):
-    vendor_id: Optional[str] = "VV-2024-001"
+    vendor_id: str
     violation_type: str
     location: str
-    inspector: Optional[str] = "Inspector-04"
+    inspector: str
 
-# Store State
+# Replace these in-memory stores with repository/database calls for persistence.
 vendors_db = []
+
 alerts_db = []
 violations_db = []
 
-zones_db = [
-    {
-        "id": "ZONE-A",
-        "name": "Zone A - Market Sq",
-        "polygon": [[21.1260, 79.0500], [21.1300, 79.0550], [21.1280, 79.0590], [21.1240, 79.0530]],
-        "type": "vending",
-        "color": "#10b981",
-        "maxCapacity": 80
-    },
-    {
-        "id": "ZONE-C",
-        "name": "Zone C - Metro Corridor Buffer",
-        "polygon": [[21.1160, 79.0500], [21.1200, 79.0550], [21.1190, 79.0580], [21.1150, 79.0520]],
-        "type": "no-vending",
-        "color": "#ef4444",
-        "maxCapacity": 0
-    }
-]
+with (Path(__file__).parent / "data" / "zones.json").open("r", encoding="utf-8") as zones_file:
+    zones_db = json.load(zones_file)["zones"]
+officer_tokens: set[str] = set()
+
+def require_officer(authorization: Optional[str] = Header(default=None)) -> str:
+    token = authorization.removeprefix("Bearer ").strip() if authorization else ""
+    if not token or token not in officer_tokens:
+        raise HTTPException(status_code=401, detail="Valid officer clearance is required")
+    return token
+
+def get_zone_or_404(zone_id: str):
+    for zone in zones_db:
+        if zone["id"].upper() == zone_id.upper():
+            return zone
+    raise HTTPException(status_code=404, detail=f"Zone {zone_id} not found")
+
+def deduplicate_vendors():
+    global vendors_db
+    unique_dict = {}
+    for v in reversed(vendors_db):
+        key = v["name"].strip().lower()
+        if key not in unique_dict or v.get("status") == "approved":
+            unique_dict[key] = v
+    vendors_db = list(unique_dict.values())
 
 @app.get("/")
 async def root():
     return {
         "status": "online",
-        "message": "Viksit Vyapari LangGraph Multi-Agent backend operational.",
-        "langgraph_active": True,
-        "pipelines_supported": [
-            "LangGraph Stateful Multi-Agent Orchestrator",
-            "1. AI Vending Zone Optimization",
-            "2. What-If Zoning & Impact Simulation",
-            "3. Footfall Intelligence & Fusion",
-            "4. Enforcement-to-Permanent-Zoning",
-            "5. Vendor Certification & Livelihood Tracking"
-        ],
-        "active_vendors_count": len(vendors_db),
-        "timestamp": datetime.now().isoformat()
+        "message": "Viksit Vyapari Dynamic Agentic Pipeline Architecture Active",
+        "pipelines_registered": len(pipeline_registry.list_pipelines()),
+        "active_vendors_count": len(vendors_db)
     }
 
 # ========================================================
-# LANGGRAPH MULTI-AGENT ORCHESTRATOR ENDPOINT
+# DYNAMIC PIPELINE ENDPOINTS (POWERED BY PIPELINE EXECUTOR)
 # ========================================================
-
-@app.post("/api/pipelines/langgraph-orchestrate")
-async def run_langgraph_orchestration(req: LangGraphRunRequest):
-    return langgraph_orchestrator.run_graph(req.location_id, req.target_vendors, req.violations_count)
-
-# ========================================================
-# SPECIAL OFFICER AUTH CLEARANCE ENDPOINT
-# ========================================================
-
-OFFICER_PASSKEYS = ["NMC-OFFICER-2024", "NMC-ADMIN-99", "NMC2024", "ADMIN123"]
-
-@app.post("/api/auth/officer-clearance")
-async def verify_officer_clearance(req: OfficerAuthRequest):
-    key = req.badge_key.strip().upper()
-    if key in OFFICER_PASSKEYS or key.startswith("NMC"):
-        return {
-            "status": "success",
-            "authenticated": True,
-            "clearance_level": "MUNICIPAL_OFFICER_LEVEL_2",
-            "badge_verified": True,
-            "message": f"Officer Badge Key '{key}' verified. High clearance granted."
-        }
-    raise HTTPException(status_code=401, detail="Invalid Municipal Officer Security Badge Key. Clearance Denied.")
-
-# ========================================================
-# 5 AGENTIC PIPELINE ENDPOINTS
-# ========================================================
-
-@app.post("/api/pipelines/ai-zone-optimization")
-async def run_pipeline1_zone_optimizer(req: ZoneOptimizeRequest):
-    return pipeline1_zone_optimizer.execute(req.location_id, req.target_vendors)
-
-@app.post("/api/pipelines/what-if-simulation")
-async def run_pipeline2_impact_simulator(req: AIRezoneRequest):
-    return pipeline2_impact_simulator.simulate(req.vendor_density, req.traffic_weight, req.target_zone)
-
-@app.post("/api/pipelines/footfall-fusion")
-async def run_pipeline3_footfall_fusion(req: FootfallFusionRequest):
-    return pipeline3_footfall_intel.run_fusion(req.cv_count, req.cv_confidence, req.frame_quality)
-
-@app.post("/api/pipelines/enforcement-to-zoning")
-async def run_pipeline4_enforcement_zoning(req: EnforcementHotspotRequest):
-    return pipeline4_enforcement_zoning.analyze_hotspot(req.location, req.violations_count)
-
-@app.post("/api/pipelines/livelihood-tracking")
-async def run_pipeline5_livelihood_tracker(req: LivelihoodTrackerRequest):
-    return pipeline5_livelihood_tracker.track_vendor_livelihood(req.vendor_id, req.vendor_name, req.baseline_income, req.current_income)
 
 @app.get("/api/pipelines/summary")
 async def get_pipelines_summary():
     return {
         "status": "success",
-        "count": 6,
-        "pipelines": [
-            {
-                "id": 0,
-                "name": "LangGraph Stateful Multi-Agent Graph",
-                "agents": "DataRetrieval → FootfallFusion → ZoneOptimizer → EnforcementIntel → LivelihoodVerifier",
-                "status": "ACTIVE & OPERATIONAL"
-            },
-            {
-                "id": 1,
-                "name": "AI Vending Zone Optimization",
-                "agents": "Orchestrator → Data Retrieval → Footfall Fusion → Zone Optimizer → Verifier",
-                "status": "ACTIVE & OPERATIONAL"
-            },
-            {
-                "id": 2,
-                "name": "What-If Zoning & Impact Simulation",
-                "agents": "Orchestrator → Data Retrieval → Zone Optimizer → Simulation → Verifier",
-                "status": "ACTIVE & OPERATIONAL"
-            },
-            {
-                "id": 3,
-                "name": "Footfall Intelligence & Fusion",
-                "agents": "Data Retrieval → Footfall Fusion → Verifier",
-                "status": "ACTIVE & OPERATIONAL"
-            },
-            {
-                "id": 4,
-                "name": "Enforcement-to-Permanent-Zoning Pipeline",
-                "agents": "Data Retrieval → Enforcement Intel → Zone Optimizer → Simulation → Verifier",
-                "status": "ACTIVE & OPERATIONAL"
-            },
-            {
-                "id": 5,
-                "name": "Vendor Certification & Livelihood Tracking",
-                "agents": "Certificate Manager → Livelihood Impact → Notification → Citizen Interface → Verifier",
-                "status": "ACTIVE & OPERATIONAL"
-            }
-        ]
+        "count": len(pipeline_registry.list_pipelines()),
+        "pipelines": pipeline_registry.list_pipelines()
     }
 
+@app.post("/api/pipelines/ai-zone-optimization")
+async def run_pipeline1_zone_optimizer(req: ZoneOptimizeRequest):
+    zone = get_zone_or_404(req.location_id)
+    params = req.model_dump() if hasattr(req, "model_dump") else req.dict()
+    params.update({"base_capacity": zone["capacity"], "cv_count": req.cv_count or zone["baselineFootfall"]})
+    return dynamic_executor.execute_pipeline("ai_vending_zone_optimization", params)
+
+@app.post("/api/pipelines/what-if-simulation")
+async def run_pipeline2_impact_simulator(req: AIRezoneRequest):
+    current = get_zone_or_404(req.current_zone_id)
+    target = get_zone_or_404(req.target_zone_id)
+    params = {
+        "location_id": current["id"], "target_zone": target["name"],
+        "target_vendors": current["activeVendors"], "base_capacity": current["capacity"],
+        "cv_count": current["baselineFootfall"], "current_zone": current, "simulated_zone": target,
+    }
+    return dynamic_executor.execute_pipeline("what_if_zoning_impact_simulation", params)
+
+@app.post("/api/pipelines/footfall-fusion")
+async def run_pipeline3_footfall_fusion(req: FootfallFusionRequest):
+    return dynamic_executor.execute_pipeline("footfall_intelligence_fusion", req.model_dump() if hasattr(req, "model_dump") else req.dict())
+
+@app.get("/api/zones/{zone_id}/performance")
+async def get_zone_performance(zone_id: str):
+    zone = get_zone_or_404(zone_id)
+    latest = fusion_service.history[0] if fusion_service.history else None
+    footfall = latest["footfall"] if latest and latest.get("live_cv_count") is not None else zone.get("baselineFootfall", 2000)
+    occupancy = zone.get("activeVendors", 0) / max(zone.get("capacity", 1), 1)
+    balance = round(max(0.0, min(10.0, 10 - abs(0.85 - occupancy) * 8)), 1)
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    base_ff = zone.get("baselineFootfall", 2000)
+    base_v = zone.get("activeVendors", 30)
+    activity_data = zone.get("activity", [int(base_ff * f) for f in [0.8, 0.85, 0.9, 0.95, 1.0, 1.15, 1.0]])
+    vendor_activity_data = zone.get("vendorActivity", [int(base_v * f) for f in [0.85, 0.9, 0.95, 0.95, 1.0, 1.1, 1.0]])
+    return {
+        "status": "success", "zoneId": zone["id"], "footfall": footfall,
+        "activeVendors": zone.get("activeVendors", 0), "capacity": zone.get("capacity", 1),
+        "customerAccess": zone.get("customerAccess", 8.0), "zoneBalance": balance,
+        "confidence": latest["confidence"] if latest else 0.78,
+        "activity": [
+            {"day": day, "footfall": value, "vendors": vendor_activity_data[index] if index < len(vendor_activity_data) else base_v}
+            for index, (day, value) in enumerate(zip(days, activity_data))
+        ],
+        "source": "live-opencv-fusion" if latest and latest.get("live_cv_count") is not None else "configured-zone-baseline",
+    }
+
+@app.get("/api/cctv-analysis")
+async def get_cctv_analysis():
+    analysis_path = (
+        Path(__file__).parent
+        / "data"
+        / "cctv_analysis.json"
+    )
+
+    if not analysis_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="CCTV analysis data not found"
+        )
+
+    with analysis_path.open(
+        "r",
+        encoding="utf-8"
+    ) as analysis_file:
+        analysis = json.load(analysis_file)
+
+    return {
+        "status": "success",
+        "source": "cctv-yolo11s",
+        "zones": analysis
+    }
+
+@app.post("/api/pipelines/enforcement-to-zoning")
+async def run_pipeline4_enforcement_zoning(req: EnforcementHotspotRequest, _officer: str = Depends(require_officer)):
+    return dynamic_executor.execute_pipeline("enforcement_to_permanent_zoning", req.model_dump() if hasattr(req, "model_dump") else req.dict())
+
+@app.post("/api/pipelines/livelihood-tracking")
+async def run_pipeline5_livelihood_tracker(req: LivelihoodTrackerRequest):
+    return dynamic_executor.execute_pipeline("vendor_certification_livelihood_tracking", req.model_dump() if hasattr(req, "model_dump") else req.dict())
+
+@app.post("/api/pipelines/langgraph-orchestrate")
+async def run_langgraph_orchestration(req: LangGraphRunRequest):
+    fused = fusion_service.set_cv(req.cv_count, available=True)
+    return langgraph_orchestrator.run_graph(
+        req.location_id, req.target_vendors, req.violations_count,
+        fused["footfall"], fused["confidence"], req.baseline_income, req.current_income,
+    )
+
 # ========================================================
-# EXISTING CIVIC REST API ENDPOINTS
+# AUTH & CIVIC REST API ENDPOINTS
 # ========================================================
+
+@app.post("/api/auth/officer-clearance")
+async def verify_officer_clearance(req: OfficerAuthRequest):
+    if not OFFICER_PASSKEY:
+        raise HTTPException(status_code=503, detail="Officer authentication is not configured")
+    if hmac.compare_digest(req.badge_key.strip(), OFFICER_PASSKEY):
+        token = secrets.token_urlsafe(32)
+        officer_tokens.add(token)
+        return {"status": "success", "authenticated": True, "badge_verified": True, "officer_token": token}
+    raise HTTPException(status_code=401, detail="Invalid Security Key")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "opencv": "ready"}
 
-@app.post("/api/reset-database")
-async def reset_database():
-    global vendors_db, alerts_db, violations_db
-    vendors_db = []
-    alerts_db = []
-    violations_db = []
-    if supabase:
-        try:
-            supabase.table("vendors").delete().neq("id", "none").execute()
-            supabase.table("alerts").delete().neq("id", 0).execute()
-            supabase.table("violations").delete().neq("id", "none").execute()
-        except Exception as e:
-            print("Supabase wipe note:", e)
-    return {"status": "success", "message": "All database tables wiped to 0 records."}
+@app.post("/api/opencv/qr/decode")
+async def decode_qr_with_opencv(file: UploadFile = File(...)):
+    """Decode one or more QR codes from a camera frame or uploaded image."""
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=415, detail="Upload an image file")
+    payload = await file.read()
+    if len(payload) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image must be 10 MB or smaller")
+    try:
+        return {"status": "success", **opencv_service.decode_qr(payload)}
+    except OpenCVImageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+@app.post("/api/opencv/footfall/count")
+async def count_people_with_opencv(file: UploadFile = File(...)):
+    """Count people in a CCTV frame and feed the observation into footfall fusion."""
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=415, detail="Upload an image frame")
+    payload = await file.read()
+    if len(payload) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image must be 10 MB or smaller")
+    try:
+        detection = opencv_service.count_people(payload)
+        fused = fusion_service.set_cv(
+            detection["people_count"], available=True,
+            opencv_confidence=detection["detector_confidence"], frame_quality=1.0,
+        )
+        return {"status": "success", **detection, "fusion": fused}
+    except OpenCVImageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 @app.get("/api/stats")
 async def get_dashboard_stats():
-    current_vendors = vendors_db
-    if supabase:
-        try:
-            res = supabase.table("vendors").select("*").execute()
-            if res.data is not None:
-                current_vendors = res.data
-        except Exception:
-            pass
-
-    total_count = len(current_vendors)
-    approved_vendors = [v for v in current_vendors if v.get("status") == "approved"]
-    pending_vendors = [v for v in current_vendors if v.get("status") == "pending"]
-    compliance_rate = round((len(approved_vendors) / total_count) * 100, 1) if total_count > 0 else 0.0
-    
-    disbursed = f"₹{round(len(approved_vendors) * 0.15, 2)} Cr" if approved_vendors else "₹0.00 Cr"
+    deduplicate_vendors()
+    total_count = len(vendors_db)
+    approved_vendors = [v for v in vendors_db if v.get("status") == "approved"]
+    pending_vendors = [v for v in vendors_db if v.get("status") != "approved"]
+    compliance_rate = round((len(approved_vendors) / max(total_count, 1)) * 100, 1) if total_count > 0 else 0.0
+    disbursed_values = [v.get("disbursedAmount") for v in vendors_db if isinstance(v.get("disbursedAmount"), (int, float))]
+    disbursed = sum(disbursed_values) if disbursed_values else None
 
     return {
         "total_vendors": total_count,
@@ -298,17 +320,6 @@ async def get_dashboard_stats():
 
 @app.get("/api/zones")
 async def get_zones():
-    current_vendors = vendors_db
-    if supabase:
-        try:
-            res = supabase.table("vendors").select("*").execute()
-            if res.data is not None:
-                current_vendors = res.data
-        except Exception:
-            pass
-
-    for z in zones_db:
-        z["currentVendors"] = len([v for v in current_vendors if z["name"] in v.get("location", "")])
     return {"status": "success", "zones": zones_db}
 
 @app.get("/api/alerts")
@@ -317,176 +328,109 @@ async def get_alerts():
 
 @app.get("/api/vendors")
 async def get_vendors():
-    if supabase:
-        try:
-            res = supabase.table("vendors").select("*").execute()
-            if res.data is not None:
-                return {"status": "success", "count": len(res.data), "vendors": res.data}
-        except Exception:
-            pass
-
+    deduplicate_vendors()
     return {"status": "success", "count": len(vendors_db), "vendors": vendors_db}
 
 @app.post("/api/vendors")
-async def create_vendor(vendor: VendorCreate):
-    new_id = f"VV-2024-{len(vendors_db) + 1:03d}"
-    lat = vendor.lat if vendor.lat else round(21.1250 + random.uniform(-0.005, 0.008), 4)
-    lng = vendor.lng if vendor.lng else round(79.0510 + random.uniform(-0.005, 0.008), 4)
-    
-    new_vendor = {
-        "id": new_id,
-        "name": vendor.name,
-        "stallName": vendor.stallName,
-        "category": vendor.category,
-        "location": vendor.location,
-        "phone": vendor.phone,
-        "status": "pending",
-        "lat": lat,
-        "lng": lng,
-        "joinedDate": datetime.now().strftime("%d %b %Y"),
-        "feePaid": False,
-        "svanidhiTier": "Pending Approval"
-    }
-    
-    if supabase:
-        try:
-            supabase.table("vendors").insert(new_vendor).execute()
-        except Exception as e:
-            print("Supabase insert note:", e)
+async def create_or_update_vendor(vendor: VendorCreate):
+    global vendors_db
+    deduplicate_vendors()
 
-    vendors_db.insert(0, new_vendor)
-    alerts_db.insert(0, {
-        "id": len(alerts_db) + 1,
-        "type": "info",
-        "title": "New Vendor Registered",
-        "message": f"New vendor application by {vendor.name} ({new_id}) for {vendor.location}.",
-        "time": "Just now"
-    })
-    return {"status": "success", "message": "Vendor registered dynamically", "vendor": new_vendor}
+    existing = None
+    v_name_clean = vendor.name.strip().lower()
+    for v in vendors_db:
+        if (vendor.id and v.get("id") == vendor.id) or ((v.get("name") or "").strip().lower() == v_name_clean):
+            existing = v
+            break
+
+    if existing:
+        existing["stallName"] = vendor.stallName
+        existing["category"] = vendor.category
+        existing["location"] = vendor.location
+        existing["phone"] = vendor.phone
+        return {"status": "success", "message": f"Updated existing vendor ({existing['id']})", "vendor": existing}
+    else:
+        new_id = vendor.id if vendor.id else f"VV-{datetime.now().year}-{uuid.uuid4().hex[:8].upper()}"
+        new_vendor = {
+            "id": new_id,
+            "name": vendor.name,
+            "stallName": vendor.stallName,
+            "category": vendor.category,
+            "location": vendor.location,
+            "phone": vendor.phone,
+            "status": "approved",  # DIRECT APPROVAL FOR VENDORS
+            "lat": vendor.lat,
+            "lng": vendor.lng,
+            "joinedDate": datetime.now().strftime("%d %b %Y"),
+            "feePaid": True,
+            "svanidhiTier": "Tier 1 (₹10,000)"
+        }
+        vendors_db.insert(0, new_vendor)
+        return {"status": "success", "message": "New vendor registered & permit granted", "vendor": new_vendor}
 
 @app.put("/api/vendors/{vendor_id}/approve")
-async def approve_vendor(vendor_id: str):
-    found = False
+async def approve_vendor(vendor_id: str, _officer: str = Depends(require_officer)):
+    global vendors_db
+    target_clean = vendor_id.strip().upper()
+    
     for v in vendors_db:
-        if v["id"] == vendor_id:
+        if str(v.get("id", "")).strip().upper() == target_clean:
             v["status"] = "approved"
-            v["feePaid"] = True
-            v["svanidhiTier"] = "Tier 1 Approved"
-            found = True
-            break
-            
-    if supabase:
-        try:
-            supabase.table("vendors").update({"status": "approved", "feePaid": True}).eq("id", vendor_id).execute()
-            found = True
-        except Exception:
-            pass
+            v["svanidhiTier"] = v.get("svanidhiTier") or "Eligibility not assessed"
 
-    if found:
-        alerts_db.insert(0, {
-            "id": len(alerts_db) + 1,
-            "type": "success",
-            "title": "Permit Approved",
-            "message": f"Vendor ({vendor_id}) permit approved by Officer.",
-            "time": "Just now"
-        })
-        return {"status": "success", "message": f"Vendor {vendor_id} approved"}
-
+            return {"status": "success", "message": f"Vendor {vendor_id} approved", "vendor": v}
     raise HTTPException(status_code=404, detail="Vendor not found")
 
-@app.post("/api/violations")
-async def log_violation(v: ViolationReport):
-    new_violation = {
-        "id": f"VIOL-{len(violations_db) + 1:04d}",
-        "vendor_id": v.vendor_id,
-        "type": v.violation_type,
-        "location": v.location,
-        "inspector": v.inspector,
-        "timestamp": datetime.now().strftime("%d %b %Y, %I:%M %p")
-    }
-    violations_db.insert(0, new_violation)
-    alerts_db.insert(0, {
-        "id": len(alerts_db) + 1,
-        "type": "danger",
-        "title": "Geotagged Violation Logged",
-        "message": f"{v.inspector} logged '{v.violation_type}' at {v.location}.",
-        "time": "Just now"
-    })
-
-    enforcement_analysis = pipeline4_enforcement_zoning.analyze_hotspot(v.location, len(violations_db))
-
-    return {
-        "status": "success", 
-        "violation": new_violation,
-        "enforcement_pipeline": enforcement_analysis
-    }
-
-@app.post("/api/ai-optimize")
-async def ai_optimize_zone(req: AIRezoneRequest):
-    return pipeline2_impact_simulator.simulate(req.vendor_density, req.traffic_weight, req.target_zone)
+@app.put("/api/vendors/{vendor_id}/income")
+async def update_vendor_income(vendor_id: str, req: IncomeUpdateRequest):
+    if req.baseline_income <= 0 or req.current_income < 0:
+        raise HTTPException(status_code=422, detail="Income values must be valid non-negative amounts")
+    for vendor in vendors_db:
+        if str(vendor.get("id", "")).strip().upper() == vendor_id.strip().upper():
+            vendor["baselineIncome"] = req.baseline_income
+            vendor["currentIncome"] = req.current_income
+            result = dynamic_executor.execute_pipeline("vendor_certification_livelihood_tracking", {
+                "vendor_id": vendor["id"], "vendor_name": vendor.get("name", ""),
+                "baseline_income": req.baseline_income, "current_income": req.current_income,
+            })
+            if isinstance(result, dict) and result.get("status") == "success" and "data" in result:
+                vendor["svanidhiTier"] = result["data"].get("svanidhi_tier", vendor.get("svanidhiTier"))
+            return {"status": "success", "vendor": vendor, "pipeline": result}
+    raise HTTPException(status_code=404, detail="Vendor not found")
 
 @app.get("/api/impact")
 async def get_impact_analytics():
-    current_vendors = vendors_db
-    if supabase:
-        try:
-            res = supabase.table("vendors").select("*").execute()
-            if res.data is not None:
-                current_vendors = res.data
-        except Exception:
-            pass
+    deduplicate_vendors()
+    total = len(vendors_db)
+    approved_list = [v for v in vendors_db if v.get("status") == "approved"]
+    approved_count = len(approved_list)
 
-    total = len(current_vendors)
-    approved_list = [v for v in current_vendors if v.get("status") == "approved"]
-    
-    tier1_count = len(approved_list)
-    tier2_count = int(len(approved_list) * 0.4)
-    tier3_count = int(len(approved_list) * 0.1)
+    growth_values = []
+    for vendor in vendors_db:
+        baseline = vendor.get("baselineIncome")
+        current = vendor.get("currentIncome")
+        if isinstance(baseline, (int, float)) and baseline > 0 and isinstance(current, (int, float)):
+            growth_values.append(((current - baseline) / baseline) * 100)
+    avg_growth = round(sum(growth_values) / len(growth_values), 1) if growth_values else None
+    income_str = f"Calculated from {len(growth_values)} income record(s)" if growth_values else "No income records"
+
+    tier_counts = {"tier1": 0, "tier2": 0, "tier3": 0}
+    for vendor in vendors_db:
+        tier = str(vendor.get("svanidhiTier", "")).lower().replace(" ", "").replace("-", "")
+        for key in tier_counts:
+            if key in tier:
+                tier_counts[key] += 1
 
     return {
         "status": "success",
-        "avg_vendor_income_growth": "+28.4%" if approved_list else "+0.0%",
-        "income_range": "From ₹12,400 to ₹15,920 / month" if approved_list else "No active vendors",
-        "repayment_rate": "100.0%" if approved_list else "0.0%",
-        "digital_payment_adoption": f"{len(approved_list)} Active Vendors",
+        "avg_vendor_income_growth": avg_growth,
+        "income_range": income_str,
+        "repayment_rate": None,
+        "digital_payment_adoption": f"{approved_count} Approved Vendors",
+        "total_active_vendors": total,
         "pm_svanidhi_tiers": {
-            "tier1": {"label": "Tier 1 (₹10,000 Disbursed)", "count": tier1_count, "percentage": 100 if tier1_count else 0},
-            "tier2": {"label": "Tier 2 (₹20,000 Upgraded Loan)", "count": tier2_count, "percentage": 40 if tier2_count else 0},
-            "tier3": {"label": "Tier 3 (₹50,000 Enhanced Credit)", "count": tier3_count, "percentage": 10 if tier3_count else 0}
+            key: {"label": key.title(), "count": count, "percentage": round(count / total * 100, 1) if total else 0}
+            for key, count in tier_counts.items()
         },
-        "dispute_reduction": "76% Reduction in Encroachment Disputes" if total > 0 else "0 Disputes Logged"
-    }
-
-@app.post("/api/sarvam-voice")
-async def process_voice_query(req: VoiceQueryRequest):
-    query = req.transcript.lower()
-    lang = req.language or "hi"
-    
-    current_vendors = vendors_db
-    if supabase:
-        try:
-            res = supabase.table("vendors").select("*").execute()
-            if res.data is not None:
-                current_vendors = res.data
-        except Exception:
-            pass
-
-    total_count = len(current_vendors)
-    approved_count = len([v for v in current_vendors if v.get("status") == "approved"])
-    pending_count = total_count - approved_count
-
-    if "vendor" in query or "फेरीवाला" in query or "विक्रेता" in query:
-        ans = f"डेटाबेसनुसार नागपूर मनपा क्षेत्रात एकूण {total_count} नोंदणीकृत फेरीवाले आहेत. {approved_count} अधिकृत आहेत आणि {pending_count} प्रक्रियेत आहेत."
-    elif "zone" in query or "झोन" in query:
-        ans = f"नागपूर क्षेत्रात २ अधिकृत फेरीवाला झोन सक्रिय आहेत. AI झोन मॉडेलनुसार झोन B मध्ये स्टॉल्स सामावून घेतले जाऊ शकतात."
-    elif "certificate" in query or "प्रमाणपत्र" in query or "पर्मीट" in query:
-        ans = f"एकूण {approved_count} विक्रेत्यांना क्यूआर कोड प्रमाणपत्र दिले गेले आहे."
-    else:
-        ans = f"Sarvam AI ({lang.upper()}): '{req.transcript}'. मनपा डेटाबेसमध्ये {total_count} फेरीवाले नोंदणीकृत आहेत."
-
-    return {
-        "status": "success",
-        "spoken_transcript": req.transcript,
-        "language": lang,
-        "response": ans
+        "dispute_reduction": f"{approved_count} Vending Permits Geotag Verified"
     }

@@ -16,6 +16,8 @@ class AgentState(TypedDict):
     violations_count: int
     enforcement_decision: str
     livelihood_growth: str
+    baseline_income: float
+    current_income: float
     final_recommendation: str
     agents_executed: List[str]
 
@@ -31,8 +33,6 @@ class LangGraphAgenticOrchestrator:
     # Node 2: Footfall Fusion Agent
     def agent_footfall_fusion(self, state: AgentState) -> AgentState:
         state["agents_executed"].append("Agent_2_FootfallFusion")
-        state["footfall"] = 523
-        state["confidence"] = 0.94
         return state
 
     # Node 3: AI Zone Optimizer Agent
@@ -51,7 +51,8 @@ class LangGraphAgenticOrchestrator:
     # Node 5: Livelihood Verifier Agent
     def agent_livelihood_verifier(self, state: AgentState) -> AgentState:
         state["agents_executed"].append("Agent_5_LivelihoodVerifier")
-        state["livelihood_growth"] = "↑ +28.4%"
+        growth = ((state["current_income"] - state["baseline_income"]) / state["baseline_income"]) * 100
+        state["livelihood_growth"] = f"{growth:+.1f}%"
         state["final_recommendation"] = (
             f"LangGraph Multi-Agent Decision: Zone {state['location_id']} optimized with {state['optimal_slots']} slots. "
             f"Footfall: {state['footfall']} (Conf: {int(state['confidence']*100)}%). Action: {state['enforcement_decision']}."
@@ -59,17 +60,21 @@ class LangGraphAgenticOrchestrator:
         return state
 
     # Execute full LangGraph State Graph Workflow
-    def run_graph(self, location_id: str = "ZONE-A", target_vendors: int = 50, violations_count: int = 4) -> Dict[str, Any]:
+    def run_graph(self, location_id: str, target_vendors: int, violations_count: int, footfall: int, confidence: float, baseline_income: float, current_income: float) -> Dict[str, Any]:
+        if baseline_income <= 0:
+            raise ValueError("baseline_income must be positive")
         initial_state: AgentState = {
             "location_id": location_id,
             "target_vendors": target_vendors,
-            "footfall": 0,
-            "confidence": 0.0,
+            "footfall": footfall,
+            "confidence": confidence,
             "optimal_slots": 0,
             "congestion_reduction": "0%",
             "violations_count": violations_count,
             "enforcement_decision": "",
             "livelihood_growth": "0%",
+            "baseline_income": baseline_income,
+            "current_income": current_income,
             "final_recommendation": "",
             "agents_executed": []
         }

@@ -7,18 +7,23 @@ from typing import Dict, Any, List
 import math
 
 class AIVendingZoneOptimizerPipeline:
-    def __init__(self, fusion_service=None):
+    def __init__(self, fusion_service=None, zone_capacities=None):
         self.fusion_service = fusion_service
+        self.zone_capacities = zone_capacities or {}
 
-    def execute(self, location_id: str = "ZONE-A", target_vendors: int = 50) -> Dict[str, Any]:
+    def execute(self, location_id: str, target_vendors: int) -> Dict[str, Any]:
         # Step 1: Data Retrieval
-        base_capacity = 80 if "A" in location_id else 60
+        base_capacity = self.zone_capacities.get(location_id)
+        if not base_capacity:
+            raise ValueError(f"No capacity configured for zone {location_id}")
         
         # Step 2: Footfall Fusion
-        fused_data = self.fusion_service.latest() if self.fusion_service else {
-            "footfall": 480, "uncertainty": 35.0, "confidence": 0.92
-        }
-        footfall = fused_data.get("footfall", 480)
+        if not self.fusion_service:
+            raise ValueError("A footfall fusion service is required")
+        fused_data = self.fusion_service.latest()
+        if not fused_data.get("sources_used"):
+            raise ValueError("No footfall source is available")
+        footfall = fused_data["footfall"]
 
         # Step 3: Zone Optimizer Calculation
         pedestrian_capacity = max(100, footfall * 1.5)

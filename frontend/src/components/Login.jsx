@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { getBackendUrl, supabase, isSupabaseConfigured, supabaseAnonKey } from '../lib/supabase';
 import { 
   User, 
   ShieldCheck, 
@@ -12,25 +12,62 @@ import {
   CheckCircle2, 
   Building2,
   Key,
-  Award
+  Award,
+  Store,
+  MapPin,
+  Phone,
+  Tag
 } from 'lucide-react';
 import './Login.css';
 
 export default function Login({ onLoginSuccess }) {
   const [role, setRole] = useState('citizen'); // Default: 'citizen' (Vendor / Citizen)
-  const [mode, setMode] = useState('register'); // 'login' or 'register'
+  const [mode, setMode] = useState('register'); // Default: 'register' for Vendors
   
+  // Basic Auth Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  
+  // Vendor Registration Fields
+  const [stallName, setStallName] = useState('');
+  const [category, setCategory] = useState('Perishable Produce');
+  const [customAddress, setCustomAddress] = useState(''); // Custom Address entered by Vendor
+  const [phone, setPhone] = useState('');
+
+  // Officer Fields
   const [department, setDepartment] = useState('');
-  const [badgeKey, setBadgeKey] = useState(''); // Special Municipal Security Key for Officers
+  const [badgeKey, setBadgeKey] = useState('');
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
-  const apiBackendUrl = import.meta.env.VITE_BACKEND_URL || 'https://vikasit-nagpur-hackathon.onrender.com';
+  const apiBackendUrl = getBackendUrl();
+
+  const signInWithGoogle = async () => {
+    setMessage(null);
+    if (!supabase) {
+      setMessage({ type: 'error', text: 'Supabase OAuth is not configured.' });
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            apikey: supabaseAnonKey
+          },
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) {
+        setMessage({ type: 'error', text: 'Google OAuth error: ' + error.message });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Google OAuth error: ' + err.message });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,7 +85,6 @@ export default function Login({ onLoginSuccess }) {
         return;
       }
 
-      // Verify passkey with backend
       try {
         const res = await fetch(`${apiBackendUrl}/api/auth/officer-clearance`, {
           method: 'POST',
@@ -56,22 +92,58 @@ export default function Login({ onLoginSuccess }) {
           body: JSON.stringify({ badge_key: cleanKey, officer_id: cleanEmail })
         });
 
+        const clearance = await res.json();
         if (!res.ok) {
           setMessage({ type: 'error', text: 'Invalid Officer Passkey! High-security clearance denied.' });
           setLoading(false);
           return;
         }
+        sessionStorage.setItem('vv_officer_token', clearance.officer_token);
       } catch (err) {
-        // Fallback validation for offline
-        if (!cleanKey.startsWith('NMC') && cleanKey !== 'ADMIN123') {
-          setMessage({ type: 'error', text: 'Invalid Security Passkey! (Try: NMC-OFFICER-2024 or NMC2024)' });
-          setLoading(false);
-          return;
-        }
+        setMessage({ type: 'error', text: 'Officer authentication service is unavailable.' });
+        setLoading(false);
+        return;
       }
     }
 
-    // Process Registration / Login
+    let vendorProfileData = {
+      id: null,
+      name: fullName || cleanEmail.split('@')[0],
+      stallName: stallName || `${fullName || 'Vendor'}'s Business`,
+      category: category,
+      location: customAddress,
+      phone,
+      status: 'approved', // INSTANT APPROVAL FOR VENDORS
+      joinedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      feePaid: true,
+      svanidhiTier: 'Tier 1 (₹10,000)'
+    };
+
+    // Register Vendor dynamically via Backend REST API
+    if (role === 'citizen' && mode === 'register') {
+      try {
+        const vendorResponse = await fetch(`${apiBackendUrl}/api/vendors`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: vendorProfileData.name,
+            stallName: vendorProfileData.stallName,
+            category: vendorProfileData.category,
+            location: vendorProfileData.location,
+            phone: vendorProfileData.phone
+          })
+        });
+        const vendorResult = await vendorResponse.json();
+        if (!vendorResponse.ok) throw new Error(vendorResult.detail || 'Vendor registration failed');
+        vendorProfileData = vendorResult.vendor;
+      } catch (err) {
+        setMessage({ type: 'error', text: err.message });
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Process Supabase Auth or Fallback
     if (isSupabaseConfigured && supabase) {
       try {
         if (mode === 'register') {
@@ -80,37 +152,27 @@ export default function Login({ onLoginSuccess }) {
             password: password,
             options: {
               data: {
-                full_name: fullName || cleanEmail.split('@')[0],
+                full_name: vendorProfileData.name,
                 role: role,
-                department: role === 'authority' ? (department || 'Nagpur Municipal Corp') : 'Citizen Vendor'
+                department: role === 'authority' ? (department || 'Nagpur Municipal Corp') : 'Citizen Vendor',
+                vendor_data: vendorProfileData
               }
             }
           });
 
-          if (error) {
-            console.warn('Supabase Auth warning:', error.message);
-            const registeredUser = {
-              email: cleanEmail,
-              role: role,
-              name: fullName || (role === 'citizen' ? 'Sharvan Kumar' : 'Officer Deshmukh'),
-              department: role === 'authority' ? (department || 'Municipal Zoning') : 'Citizen Vendor',
-              token: 'session-' + Date.now()
-            };
-            setMessage({ type: 'success', text: `${role === 'authority' ? 'Officer Security Clearance Granted!' : 'Vendor Account Registered!'}` });
-            setTimeout(() => onLoginSuccess && onLoginSuccess(registeredUser), 600);
-            return;
-          }
-
-          const newUser = {
-            email: data.user?.email || cleanEmail,
+          if (error) throw error;
+          const registeredUser = {
+            email: cleanEmail,
             role: role,
-            name: fullName || cleanEmail.split('@')[0],
-            department: role === 'authority' ? department : 'Citizen Vendor',
-            token: data.session?.access_token || 'session-' + Date.now()
+            name: vendorProfileData.name,
+            department: role === 'authority' ? (department || 'Municipal Zoning') : 'Citizen Vendor',
+            vendorData: vendorProfileData,
+            token: data?.session?.access_token
           };
 
-          setMessage({ type: 'success', text: 'Registration successful! Welcome to Viksit Vyapari.' });
-          setTimeout(() => onLoginSuccess && onLoginSuccess(newUser), 600);
+          setMessage({ type: 'success', text: role === 'authority' ? 'Officer Security Clearance Granted!' : 'Vendor Application Submitted & Permit Granted!' });
+          setTimeout(() => onLoginSuccess && onLoginSuccess(registeredUser), 600);
+          return;
 
         } else {
           // Sign In
@@ -119,94 +181,27 @@ export default function Login({ onLoginSuccess }) {
             password: password
           });
 
-          if (error) {
-            console.warn('Supabase Sign-In warning:', error.message);
-            const fallbackUser = {
-              email: cleanEmail,
-              role: role,
-              name: fullName || (role === 'citizen' ? 'Sharvan Kumar' : 'Officer Deshmukh'),
-              department: role === 'authority' ? 'Nagpur Municipal Corp' : 'Citizen Vendor',
-              token: 'session-' + Date.now()
-            };
-            setMessage({ type: 'success', text: `${role === 'authority' ? 'Officer Clearance Verified.' : 'Vendor Sign In Successful.'}` });
-            setTimeout(() => onLoginSuccess && onLoginSuccess(fallbackUser), 600);
-            return;
-          }
-
+          if (error) throw error;
           const loggedUser = {
-            email: data.user.email,
-            role: data.user.user_metadata?.role || role,
-            name: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
-            department: data.user.user_metadata?.department || (role === 'authority' ? 'Municipal Corp' : 'Citizen Vendor'),
-            token: data.session?.access_token
+            email: cleanEmail,
+            role: role,
+            name: data.user?.user_metadata?.full_name || cleanEmail.split('@')[0],
+            department: data.user?.user_metadata?.department || '',
+            vendorData: vendorProfileData,
+            token: data?.session?.access_token
           };
 
           setMessage({ type: 'success', text: 'Welcome back! Sign in successful.' });
           setTimeout(() => onLoginSuccess && onLoginSuccess(loggedUser), 600);
         }
       } catch (err) {
-        const demoUser = {
-          email: cleanEmail,
-          role: role,
-          name: fullName || (role === 'citizen' ? 'Sharvan Kumar' : 'Officer Deshmukh'),
-          department: role === 'authority' ? (department || 'Nagpur Municipal Corp') : 'Citizen Vendor',
-          token: 'session-' + Date.now()
-        };
-        setMessage({ type: 'success', text: 'Account authenticated successfully!' });
-        setTimeout(() => onLoginSuccess && onLoginSuccess(demoUser), 600);
+        setMessage({ type: 'error', text: err.message || 'Authentication failed.' });
       } finally {
         setLoading(false);
       }
     } else {
-      setTimeout(() => {
-        setLoading(false);
-        const demoUser = {
-          email: cleanEmail || 'user@example.com',
-          role: role,
-          name: fullName || (role === 'citizen' ? 'Sharvan Kumar' : 'Officer Deshmukh'),
-          department: role === 'authority' ? (department || 'Nagpur Municipal Corp') : 'Citizen Vendor',
-          token: 'demo-token-' + Date.now()
-        };
-        setMessage({ type: 'success', text: `Authentication successful as ${role === 'citizen' ? 'VENDOR' : 'MUNICIPAL OFFICER'}!` });
-        if (onLoginSuccess) {
-          onLoginSuccess(demoUser);
-        }
-      }, 500);
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    setMessage(null);
-
-    if (!isSupabaseConfigured || !supabase) {
-      setMessage({ type: 'error', text: 'Google Sign-In requires Supabase to be configured. Please add your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the .env file.' });
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin
-      }
-    });
-    if (error) {
-      setMessage({ type: 'error', text: error.message });
-    }
-    // On success the browser redirects to Google, then back here.
-    // App.jsx picks up the resulting session via onAuthStateChange.
-  };
-
-  const handleQuickDemoAccess = (demoRole) => {
-    setRole(demoRole);
-    const demoUser = {
-      email: demoRole === 'authority' ? 'officer.deshmukh@nagpur.gov.in' : 'sharvan2007@gmail.com',
-      role: demoRole,
-      name: demoRole === 'authority' ? 'Officer Deshmukh' : 'Sharvan Kumar (Vendor)',
-      department: demoRole === 'authority' ? 'Nagpur Municipal Corp - High Security' : 'Citizen Vendor Portal',
-      token: 'demo-token-' + Date.now()
-    };
-    if (onLoginSuccess) {
-      onLoginSuccess(demoUser);
+      setLoading(false);
+      setMessage({ type: 'error', text: 'Authentication is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.' });
     }
   };
 
@@ -220,11 +215,11 @@ export default function Login({ onLoginSuccess }) {
             <Building2 size={14} />
             <span>Viksit Vyapari Civic Portal</span>
           </div>
-          <h1>{mode === 'login' ? 'Sign In to Portal' : 'Create Account'}</h1>
-          <p>Separate Portal for Registered Vendors & Municipal Officers</p>
+          <h1>{mode === 'register' ? 'Street Vendor Permit Application' : 'Sign In to Portal'}</h1>
+          <p>{role === 'citizen' ? 'Submit your vending application for Instant Permit & Certificate Issuance' : 'Municipal Officer Portal Access'}</p>
         </div>
 
-        {/* Role Selector: Default is Citizen/Vendor */}
+        {/* Role Selector */}
         <div className="role-selector">
           <button
             type="button"
@@ -232,7 +227,7 @@ export default function Login({ onLoginSuccess }) {
             onClick={() => { setRole('citizen'); setMessage(null); }}
           >
             <User size={16} />
-            <span>Citizen / Vendor</span>
+            <span>Street Vendor / Merchant</span>
           </button>
           <button
             type="button"
@@ -252,21 +247,21 @@ export default function Login({ onLoginSuccess }) {
           </div>
         )}
 
-        {/* Tab Switcher: Login / Register */}
+        {/* Tab Switcher: Register / Login */}
         <div className="auth-tabs">
+          <button
+            type="button"
+            className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
+            onClick={() => { setMode('register'); setMessage(null); }}
+          >
+            Vendor Application
+          </button>
           <button
             type="button"
             className={`tab-btn ${mode === 'login' ? 'active' : ''}`}
             onClick={() => { setMode('login'); setMessage(null); }}
           >
             Sign In
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
-            onClick={() => { setMode('register'); setMessage(null); }}
-          >
-            Register
           </button>
         </div>
 
@@ -281,21 +276,88 @@ export default function Login({ onLoginSuccess }) {
         {/* Auth Form */}
         <form className="auth-form" onSubmit={handleSubmit}>
           
-          {mode === 'register' && (
-            <div className="form-group">
-              <label>Full Name</label>
-              <div className="input-container">
-                <User size={18} className="input-icon" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Rahul Sharma"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="form-input"
-                />
-              </div>
+          <div className="form-group">
+            <label>Vendor Full Name</label>
+            <div className="input-container">
+              <User size={18} className="input-icon" />
+              <input
+                type="text"
+                required
+                placeholder="e.g. Sujal Tembhare"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="form-input"
+              />
             </div>
+          </div>
+
+          {/* VENDOR SPECIFIC REGISTRATION FIELDS */}
+          {role === 'citizen' && mode === 'register' && (
+            <>
+              <div className="form-group">
+                <label>Stall / Business Trade Name</label>
+                <div className="input-container">
+                  <Store size={18} className="input-icon" color="#3b82f6" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Sujal Pakodewala & Fast Food"
+                    value={stallName}
+                    onChange={(e) => setStallName(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Vending Category</label>
+                <div className="input-container">
+                  <Tag size={16} className="input-icon" />
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="form-input"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)' }}
+                  >
+                    <option value="Pakode & Fast Food">Pakode & Fast Food</option>
+                    <option value="Perishable Produce">Perishable Produce & Fruits</option>
+                    <option value="Tea & Beverages">Tea & Beverages</option>
+                    <option value="Textiles & Garments">Textiles & Garments</option>
+                    <option value="General Handicrafts">General Handicrafts</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Vending Stall Address / Landmark (Used for Dynamic GIS Mapping)</label>
+                <div className="input-container">
+                  <MapPin size={18} className="input-icon" color="#10b981" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Omkar Nagar chowk, Nagpur"
+                    value={customAddress}
+                    onChange={(e) => setCustomAddress(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Mobile Contact Phone</label>
+                <div className="input-container">
+                  <Phone size={18} className="input-icon" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+91 98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           {/* SPECIAL MUNICIPAL OFFICER SECURITY PASSKEY INPUT */}
@@ -307,14 +369,14 @@ export default function Login({ onLoginSuccess }) {
                 <input
                   type="password"
                   required
-                  placeholder="e.g. NMC-OFFICER-2024"
+                  placeholder="Enter configured officer passkey"
                   value={badgeKey}
                   onChange={(e) => setBadgeKey(e.target.value)}
                   className="form-input"
                 />
               </div>
               <span style={{ fontSize: '0.675rem', color: '#34d399', marginTop: '2px' }}>
-                Required for Municipal Officer Clearance (Passkey: NMC-OFFICER-2024 or NMC2024)
+                Required for Municipal Officer Clearance
               </span>
             </div>
           )}
@@ -374,12 +436,12 @@ export default function Login({ onLoginSuccess }) {
             </div>
           </div>
 
-          <button type="submit" className="submit-btn" disabled={loading}>
+          <button type="submit" className="submit-btn" disabled={loading} style={{ marginTop: '12px' }}>
             {loading ? (
-              <span>Authenticating...</span>
+              <span>Submitting Application...</span>
             ) : (
               <>
-                <span>{mode === 'login' ? `Sign In as ${role === 'citizen' ? 'Vendor' : 'Officer'}` : 'Register Account'}</span>
+                <span>{mode === 'register' ? 'Submit Application for Officer Approval' : `Sign In as ${role === 'citizen' ? 'Vendor' : 'Officer'}`}</span>
                 <ArrowRight size={18} />
               </>
             )}
@@ -387,7 +449,7 @@ export default function Login({ onLoginSuccess }) {
 
         </form>
 
-        {/* Google OAuth */}
+        {/* Google OAuth Option */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '18px 0 14px' }}>
           <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
           <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>OR</span>
@@ -397,7 +459,7 @@ export default function Login({ onLoginSuccess }) {
         <button
           type="button"
           className="submit-btn"
-          style={{ background: '#fff', color: '#1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+          style={{ background: '#fff', color: '#1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', border: 'none' }}
           onClick={signInWithGoogle}
         >
           <svg width="18" height="18" viewBox="0 0 48 48">
@@ -408,33 +470,6 @@ export default function Login({ onLoginSuccess }) {
           </svg>
           <span>{mode === 'login' ? 'Sign in with Google' : 'Sign up with Google'}</span>
         </button>
-
-        {/* Quick Demo Access Buttons */}
-        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', marginBottom: '10px', fontWeight: '600' }}>
-            ⚡ Instant 1-Click Demo Login:
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <button 
-              type="button" 
-              className="quick-act-btn" 
-              onClick={() => handleQuickDemoAccess('citizen')}
-              style={{ fontSize: '0.78rem' }}
-            >
-              <User size={14} color="#60a5fa" />
-              <span>Vendor Access</span>
-            </button>
-            <button 
-              type="button" 
-              className="quick-act-btn" 
-              onClick={() => handleQuickDemoAccess('authority')}
-              style={{ fontSize: '0.78rem' }}
-            >
-              <ShieldCheck size={14} color="#34d399" />
-              <span>Officer Passkey Access</span>
-            </button>
-          </div>
-        </div>
 
       </div>
     </div>

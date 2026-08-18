@@ -1,0 +1,69 @@
+{
+  "pipelines": [
+    {
+      "id": "ai_vending_zone_optimization",
+      "name": "AI Vending Zone Optimization",
+      "description": "Finds the best vending locations while balancing vendor livelihood and pedestrian experience.",
+      "enabled": true,
+      "stages": [
+        { "id": "orchestrator", "type": "orchestrator", "config": { "log_level": "INFO" } },
+        { "id": "data_retrieval", "type": "data_retrieval", "config": { "default_location": "ZONE-A", "base_capacity": 80 } },
+        { "id": "footfall_fusion", "type": "footfall_fusion", "config": { "confidence_threshold": 0.8 } },
+        { "id": "zone_optimizer", "type": "zone_optimizer", "config": { "livelihood_weight": 0.5, "comfort_weight": 0.5 } },
+        { "id": "verifier", "type": "verifier", "config": { "min_balance_index": 45.0 } }
+      ]
+    },
+    {
+      "id": "what_if_zoning_impact_simulation",
+      "name": "What-If Zoning & Impact Simulation",
+      "description": "Simulates relocating vendors and predicts footfall, income, congestion, safety and ROI before implementation.",
+      "enabled": true,
+      "stages": [
+        { "id": "orchestrator", "type": "orchestrator", "config": { "log_level": "INFO" } },
+        { "id": "data_retrieval", "type": "data_retrieval", "config": { "default_location": "ZONE-B" } },
+        { "id": "footfall_fusion", "type": "footfall_fusion", "config": { "confidence_threshold": 0.7 } },
+        { "id": "zone_optimizer", "type": "zone_optimizer", "config": { "livelihood_weight": 0.6, "comfort_weight": 0.4 } },
+        { "id": "simulation", "type": "simulation", "config": { "congestion_factor": 0.42, "income_factor": 0.28 } },
+        { "id": "verifier", "type": "verifier", "config": { "min_congestion_reduction": 10 } }
+      ]
+    },
+    {
+      "id": "footfall_intelligence_fusion",
+      "name": "Footfall Intelligence & Fusion",
+      "description": "Combines CCTV/YOLO measurements with historical/static data using confidence-weighted Kalman filtering to produce a reliable footfall estimate.",
+      "enabled": true,
+      "stages": [
+        { "id": "data_retrieval", "type": "data_retrieval", "config": { "fetch_sensor_feeds": true } },
+        { "id": "footfall_fusion", "type": "footfall_fusion", "config": { "cv_weight": 0.62, "dataset_weight": 0.38 } },
+        { "id": "verifier", "type": "verifier", "config": { "require_confidence": 0.7 } }
+      ]
+    },
+    {
+      "id": "enforcement_to_permanent_zoning",
+      "name": "Enforcement-to-Permanent-Zoning Pipeline",
+      "description": "Detects recurring eviction hotspots, calculates enforcement costs and determines whether permanent vending zones are economically preferable.",
+      "enabled": true,
+      "stages": [
+        { "id": "data_retrieval", "type": "data_retrieval", "config": { "fetch_hotspot_data": true } },
+        { "id": "footfall_fusion", "type": "footfall_fusion", "config": { "confidence_threshold": 0.7 } },
+        { "id": "enforcement_intel", "type": "enforcement_intel", "config": { "avg_enforcement_cost": 4500.0, "infra_cost": 180000.0 } },
+        { "id": "zone_optimizer", "type": "zone_optimizer", "config": { "hotspot_mode": true } },
+        { "id": "simulation", "type": "simulation", "config": { "eval_roi": true } },
+        { "id": "verifier", "type": "verifier", "config": { "max_payback_months": 18.0 } }
+      ]
+    },
+    {
+      "id": "vendor_certification_livelihood_tracking",
+      "name": "Vendor Certification & Livelihood Tracking",
+      "description": "Issues/verifies QR certificates, tracks vendor income after relocation, collects feedback and monitors whether zoning actually improves livelihoods.",
+      "enabled": true,
+      "stages": [
+        { "id": "certificate_manager", "type": "certificate_manager", "config": { "issuer": "Nagpur Municipal Corporation" } },
+        { "id": "livelihood_impact", "type": "livelihood_impact", "config": { "growth_threshold_pct": 25.0 } },
+        { "id": "notification", "type": "notification", "config": { "channel": "SMS_AND_APP" } },
+        { "id": "citizen_interface", "type": "citizen_interface", "config": { "portal_view": "VENDOR_PROFILE" } },
+        { "id": "verifier", "type": "verifier", "config": { "require_livelihood_growth": true } }
+      ]
+    }
+  ]
+}

@@ -23,10 +23,11 @@ export default function Navbar({ activeModule, currentUser, onLogout, backendSta
   const titles = {
     dashboard: t('Dashboard Overview', 'Dashboard Overview'),
     vendor_profile: t('My Vendor Profile', 'My Vendor Profile & Unique QR'),
-    zone_optimizer: t('AI Zone Optimizer', 'AI Zone Optimizer'),
+    zone_optimizer: t('Current Designated Zone', 'Current Designated Zone'),
     vendor_management: t('Vendor Directory', 'Vendor & Gov Directory'),
     certificate_management: t('Certificate Portal', 'Digital Certificate Portal'),
     mobile_inspector: t('Mobile Inspector', 'Mobile Inspector Portal'),
+    enforcement_intel: t('Enforcement Intelligence', 'Enforcement Intelligence'),
     impact_reports: t('Executive Analytics', 'Livelihood & Executive Impact')
   };
 

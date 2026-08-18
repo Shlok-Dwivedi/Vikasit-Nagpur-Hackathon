@@ -11,7 +11,7 @@ export default function SarvamVoiceModal({ isOpen, onClose, backendUrl }) {
 
   const recognitionRef = useRef(null);
 
-  const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
+  const apiBackendUrl = backendUrl || '';
 
   useEffect(() => {
     // Reset state on modal open

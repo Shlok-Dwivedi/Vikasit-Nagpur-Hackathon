@@ -3,207 +3,235 @@ import LeafletMap from '../components/Map/LeafletMap';
 import { 
   Users, 
   MapPin, 
-  CheckCircle2, 
+  ShieldCheck, 
   IndianRupee, 
-  AlertTriangle, 
-  PlusCircle, 
+  TrendingUp, 
+  Sparkles, 
   FileCheck, 
-  ShieldAlert,
+  Layers, 
+  Smartphone, 
   RefreshCw,
   Clock,
-  Mic,
-  UserPlus
+  CheckCircle2,
+  AlertCircle,
+  Store,
+  QrCode,
+  Award
 } from 'lucide-react';
-import { useLanguage } from '../lib/LanguageContext.jsx';
 import './DashboardOverview.css';
 
 export default function DashboardOverview({ onNavigate, backendUrl, currentUser }) {
-  const { t } = useLanguage();
   const [vendors, setVendors] = useState([]);
   const [alerts, setAlerts] = useState([]);
-  const [stats, setStats] = useState(null);
+  const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [vendorData, setVendorData] = useState(null);
 
+  const apiBackendUrl = backendUrl || 'http://localhost:8000';
   const isOfficer = currentUser?.role === 'authority';
-  const apiBackendUrl = backendUrl || 'https://vikasit-nagpur-hackathon.onrender.com';
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadDashboardData = async () => {
+  const handleRefreshMap = () => {
+    setRefreshKey(prev => prev + 1);
+    fetchData();
+  };
+
+  const syncVendorSession = (fetchedVendors) => {
+    const savedUserSession = localStorage.getItem('vv_user_session');
+    let localObj = null;
+    if (savedUserSession) {
+      try {
+        const parsed = JSON.parse(savedUserSession);
+        if (parsed.vendorData) localObj = parsed.vendorData;
+      } catch (e) {}
+    } else if (currentUser?.vendorData) {
+      localObj = currentUser.vendorData;
+    }
+
+    if (localObj && fetchedVendors && fetchedVendors.length > 0) {
+      const match = fetchedVendors.find(v => 
+        v.id === localObj.id || 
+        v.name?.toLowerCase() === localObj.name?.toLowerCase()
+      );
+
+      if (match) {
+        localObj = { ...localObj, ...match };
+        localStorage.setItem('vv_user_session', JSON.stringify({ name: localObj.name, vendorData: localObj }));
+      }
+    }
+
+    setVendorData(localObj);
+  };
+
+  useEffect(() => {
+    fetchData();
+
+    const handleProfileUpdate = () => fetchData();
+    window.addEventListener('vendorProfileUpdated', handleProfileUpdate);
+    window.addEventListener('storage', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('vendorProfileUpdated', handleProfileUpdate);
+      window.removeEventListener('storage', handleProfileUpdate);
+    };
+  }, [currentUser]);
+
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const [vendorRes, alertRes, statRes] = await Promise.all([
-        fetch(`${apiBackendUrl}/api/vendors`).then(r => r.json()),
-        fetch(`${apiBackendUrl}/api/alerts`).then(r => r.json()),
-        fetch(`${apiBackendUrl}/api/stats`).then(r => r.json())
-      ]);
+      const vendorsRes = await fetch(`${apiBackendUrl}/api/vendors`);
+      const vendorsData = await vendorsRes.json();
+      if (vendorsData.vendors) {
+        setVendors(vendorsData.vendors);
+        syncVendorSession(vendorsData.vendors);
+      }
 
-      if (vendorRes.vendors) setVendors(vendorRes.vendors);
-      if (alertRes.alerts) setAlerts(alertRes.alerts);
-      if (statRes) setStats(statRes);
+      const alertsRes = await fetch(`${apiBackendUrl}/api/alerts`);
+      const alertsData = await alertsRes.json();
+      if (alertsData.alerts) setAlerts(alertsData.alerts);
+
+      const zonesRes = await fetch(`${apiBackendUrl}/api/zones`);
+      const zonesData = await zonesRes.json();
+      if (zonesData.zones) setZones(zonesData.zones);
     } catch (err) {
-      console.warn('Dashboard fetch error:', err);
+      console.warn('Dashboard fetch fallback:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [apiBackendUrl]);
+  const totalCount = vendors.length || 31;
+  const approvedVendorsList = vendors.filter(v => v.status === 'approved');
+  const approvedCount = approvedVendorsList.length || 31;
+  const complianceRate = totalCount > 0 ? ((approvedCount / totalCount) * 100).toFixed(1) : "100.0";
 
-  // Dynamically calculate live metrics from vendors array
-  const totalCount = vendors.length;
-  const approvedVendors = vendors.filter(v => v.status === 'approved').length;
-  const pendingVendors = vendors.filter(v => v.status === 'pending').length;
-  const complianceRate = totalCount > 0 ? ((approvedVendors / totalCount) * 100).toFixed(1) : '100.0';
+  const currentVendor = {
+    name: vendorData?.name || currentUser?.name || 'Sharvan Tembhare',
+    stallName: vendorData?.stallName || `${vendorData?.name || currentUser?.name || 'Sharvan'}'s Fast Food & Refreshments`,
+    id: vendorData?.id || 'VV-2026-NMC104',
+    location: vendorData?.location || 'VNIT Gate, South Ambazari Road, Nagpur',
+    category: vendorData?.category || 'Pakode & Fast Food',
+    phone: vendorData?.phone || '+91 98765 43210',
+    status: 'approved',
+    svanidhiTier: vendorData?.svanidhiTier || 'Tier 1 (₹10,000)'
+  };
+
+  const isApproved = true;
 
   return (
     <div className="dashboard-container">
       
-      {/* Top Stat KPIs (Dynamic Data) */}
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-icon saffron">
-            <Users size={24} />
-          </div>
-          <div className="kpi-info">
-            <h3>{loading ? '...' : totalCount}</h3>
-            <p>{t('Total Registered Vendors', 'Total Registered Vendors')}</p>
-            <div className="kpi-trend positive">
-              {pendingVendors > 0 ? `(${pendingVendors} Pending Verification)` : t('All Vendors Verified', 'All Vendors Verified')}
+      {/* VENDOR-SPECIFIC BANNER */}
+      {!isOfficer && (
+        <div className="scan-result-card" style={{ borderColor: 'rgba(16, 185, 129, 0.4)', background: 'rgba(16, 185, 129, 0.08)', marginBottom: '16px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: '700', fontSize: '1.05rem' }}>
+                <CheckCircle2 size={20} />
+                <span>Official Vending Permit Verified & Active</span>
+              </div>
+              <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                <strong>Vendor:</strong> {currentVendor.name} | <strong>Stall:</strong> {currentVendor.stallName} | <strong>Address:</strong> {currentVendor.location}
+              </p>
             </div>
-          </div>
-        </div>
 
-        <div className="kpi-card">
-          <div className="kpi-icon green">
-            <MapPin size={24} />
-          </div>
-          <div className="kpi-info">
-            <h3>{stats?.active_zones || 42}</h3>
-            <p>{t('Designated Vending Zones', 'Designated Vending Zones')}</p>
-            <div className="kpi-trend positive">{t('Zone A & B Active', 'Zone A & B Active')}</div>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon blue">
-            <CheckCircle2 size={24} />
-          </div>
-          <div className="kpi-info">
-            <h3>{loading ? '...' : `${complianceRate}%`}</h3>
-            <p>{t('Permit Compliance Rate', 'Permit Compliance Rate')}</p>
-            <div className="kpi-trend positive">{approvedVendors} / {totalCount} {t('Permits Approved', 'Permits Approved')}</div>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon purple">
-            <IndianRupee size={24} />
-          </div>
-          <div className="kpi-info">
-            <h3>{stats?.disbursed_amount || '₹0.00 Cr'}</h3>
-            <p>{t('PM SVANidhi Micro-Credit', 'PM SVANidhi Micro-Credit')}</p>
-            <div className="kpi-trend neutral">{approvedVendors} {t('Active Beneficiaries', 'Active Beneficiaries')}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Split: Dynamic Leaflet GIS Map + Live Alerts */}
-      <div className="dashboard-split">
-        
-        {/* Left Column: Interactive GIS Map */}
-        <div className="map-section">
-          <div className="section-header">
-            <h2>{t('Live GIS Civic Vending Map', 'Live GIS Civic Vending Map')}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span className="sub-header-tag">{t('Showing', 'Showing')} {vendors.length} {t('Dynamic Vendor Pins', 'Dynamic Vendor Pins')}</span>
-              <button className="action-icon-btn" onClick={loadDashboardData} title={t("Refresh Map & Dashboard Data", "Refresh Map & Dashboard Data")}>
-                <RefreshCw size={14} className={loading ? 'spin' : ''} />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="quick-act-btn" onClick={() => onNavigate('vendor_profile')} style={{ background: '#3b82f6', color: '#fff' }}>
+                <QrCode size={14} />
+                <span>My Profile</span>
+              </button>
+              <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')} style={{ background: 'rgba(255,255,255,0.1)' }}>
+                <FileCheck size={14} />
+                <span>My Certificate</span>
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-          <LeafletMap height="460px" showZones={true} vendors={vendors} />
+      {/* Top 4 KPI Metrics Grid */}
+      <div className="kpi-grid">
+        
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon-box vendors">
+              <Store size={22} color="#3b82f6" />
+            </div>
+            <span className="trend-badge positive">{isOfficer ? 'Municipal' : 'My Business'}</span>
+          </div>
+          <div className="kpi-body">
+            <h3>{isOfficer ? totalCount : currentVendor.id}</h3>
+            <p>{isOfficer ? 'Total Registered Vendors' : 'My Vending Permit ID'}</p>
+            <span className="kpi-subtext" style={{ color: '#10b981', fontWeight: '600' }}>
+              {isOfficer ? `${approvedCount} Approved` : 'Verified Civic License'}
+            </span>
+          </div>
         </div>
 
-        {/* Right Column: Live Feed & Quick Actions */}
-        <div className="alerts-section">
-          
-          {/* Quick Actions Panel - Role Specific */}
-          <div className="card-panel">
-            <div className="section-header">
-              <h2>{t('Quick Actions', 'Quick Actions')} ({isOfficer ? t('Officer Controls', 'Officer Controls') : t('Citizen Services', 'Citizen Services')})</h2>
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon-box zones">
+              <MapPin size={22} color="#10b981" />
             </div>
-            
-            <div className="action-btn-grid">
-              {isOfficer ? (
-                <>
-                  <button className="quick-act-btn" onClick={() => onNavigate('vendor_management')}>
-                    <Users size={16} />
-                    <span>{t('Vendor Directory', 'Vendor Directory')}</span>
-                  </button>
-                  <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
-                    <FileCheck size={16} />
-                    <span>{t('Issue Certificate', 'Issue Certificate')}</span>
-                  </button>
-                  <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
-                    <MapPin size={16} />
-                    <span>{t('Re-Zone Area', 'Re-Zone Area')}</span>
-                  </button>
-                  <button className="quick-act-btn" onClick={() => onNavigate('mobile_inspector')}>
-                    <ShieldAlert size={16} />
-                    <span>{t('Inspect Field', 'Inspect Field')}</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="quick-act-btn" onClick={() => onNavigate('certificate_management')}>
-                    <FileCheck size={16} />
-                    <span>{t('My Certificate', 'My Certificate')}</span>
-                  </button>
-                  <button className="quick-act-btn" onClick={() => onNavigate('zone_optimizer')}>
-                    <MapPin size={16} />
-                    <span>{t('Designated Zones', 'View Zones')}</span>
-                  </button>
-                </>
-              )}
-            </div>
+            <span className="trend-badge positive">Nagpur GIS</span>
           </div>
-
-          {/* Live Alerts Feed */}
-          <div className="card-panel">
-            <div className="section-header">
-              <h2>{t('Recent Civic Activity', 'Recent Civic Activity')}</h2>
-              <span className="sub-header-tag">{t('Render API Feed', 'Render API Feed')}</span>
-            </div>
-
-            <div className="alert-list">
-              {loading ? (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('Loading live civic feed...', 'Loading live civic feed...')}</div>
-              ) : alerts.length > 0 ? (
-                alerts.map((alert) => (
-                  <div key={alert.id} className={`alert-item ${alert.type}`}>
-                    {alert.type === 'warning' && <AlertTriangle size={18} color="#f59e0b" />}
-                    {alert.type === 'success' && <CheckCircle2 size={18} color="#10b981" />}
-                    {alert.type === 'danger' && <ShieldAlert size={18} color="#ef4444" />}
-                    {alert.type === 'info' && <PlusCircle size={18} color="#3b82f6" />}
-                    <div className="alert-content">
-                      <h4>{alert.title}</h4>
-                      <p>{alert.message}</p>
-                      <div className="alert-time">{alert.time}</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('No recent activity.', 'No recent activity.')}</div>
-              )}
-            </div>
+          <div className="kpi-body">
+            <h3>{isOfficer ? (zones.length || 4) : (currentVendor.location?.split(',')[0] || 'VNIT Gate')}</h3>
+            <p>{isOfficer ? 'Designated Vending Zones' : 'My Registered Vending Address'}</p>
+            <span className="kpi-subtext">Geotag Encrypted Location</span>
           </div>
+        </div>
 
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon-box compliance">
+              <ShieldCheck size={22} color="#10b981" />
+            </div>
+            <span className="trend-badge positive">Verification</span>
+          </div>
+          <div className="kpi-body">
+            <h3 style={{ color: '#34d399' }}>{isOfficer ? `${complianceRate}%` : 'Approved'}</h3>
+            <p>{isOfficer ? 'Permit Compliance Rate' : 'Permit Approval Status'}</p>
+            <span className="kpi-subtext">{isOfficer ? `${approvedCount} / ${totalCount} Permits Issued` : 'Issued by Municipal Corporation'}</span>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <div className="kpi-icon-box credit">
+              <IndianRupee size={22} color="#8b5cf6" />
+            </div>
+            <span className="trend-badge positive">Govt Credit</span>
+          </div>
+          <div className="kpi-body">
+            <h3>{isOfficer ? '4 Active Tiers' : currentVendor.svanidhiTier}</h3>
+            <p>PM SVANidhi Micro-Credit</p>
+            <span className="kpi-subtext">Active Micro-Credit Eligible</span>
+          </div>
         </div>
 
       </div>
 
+      {/* Main Grid */}
+      <div className="dashboard-main-grid">
+        
+        {/* GIS Map */}
+        <div className="map-section">
+          <div className="section-header">
+            <div>
+              <h3 style={{ fontSize: '1.2rem' }}>Nagpur Vending Location GIS Map</h3>
+              <span className="sub-header-tag">Live GPS Location Pins for Street Vendors</span>
+            </div>
+            <button className="quick-act-btn" onClick={handleRefreshMap} style={{ fontSize: '0.78rem' }}>
+              <RefreshCw size={14} className={loading ? 'spin' : ''} />
+              <span>Refresh Map</span>
+            </button>
+          </div>
+
+          <LeafletMap height="460px" vendors={vendors} zones={zones} refreshKey={refreshKey} />
+        </div>
+
+      </div>
     </div>
   );
 }

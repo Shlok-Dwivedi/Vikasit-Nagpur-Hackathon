@@ -7,10 +7,10 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 class VendorCertificationLivelihoodPipeline:
-    def track_vendor_livelihood(self, vendor_id: str, vendor_name: str, baseline_monthly_income: float = 12400.0, current_monthly_income: float = 15920.0) -> Dict[str, Any]:
+    def track_vendor_livelihood(self, vendor_id: str, vendor_name: str, baseline_monthly_income: float, current_monthly_income: float) -> Dict[str, Any]:
         # Step 1: Livelihood Impact Calculation
         income_growth_pct = round(((current_monthly_income - baseline_monthly_income) / max(baseline_monthly_income, 1.0)) * 100, 1)
-        tier_status = "Tier 2 Eligible (₹20,000 Upgraded Loan)" if income_growth_pct >= 25.0 else "Tier 1 Approved (₹10,000 Loan)"
+        tier_status = "Tier 2 review recommended" if income_growth_pct >= 25.0 else "Tier eligibility requires programme review"
 
         # Step 2: Verifier Check
         is_livelihood_improved = income_growth_pct > 0.0

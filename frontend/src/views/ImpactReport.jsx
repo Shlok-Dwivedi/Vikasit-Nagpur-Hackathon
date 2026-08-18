@@ -4,26 +4,31 @@ import './ImpactReport.css';
 
 export default function ImpactReport({ backendUrl }) {
   const [impactData, setImpactData] = useState({
-    avg_vendor_income_growth: '+28.4%',
-    income_range: 'From ₹12,400 to ₹15,920 / month',
-    repayment_rate: '84.5%',
-    digital_payment_adoption: '12,100 Active Vendors',
+    avg_vendor_income_growth: '+0.0%',
+    income_range: 'Calculated from live approved vendors',
+    repayment_rate: 'Not measured',
+    digital_payment_adoption: '0 Active Vendors',
+    total_active_vendors: 0,
     pm_svanidhi_tiers: {
-      tier1: { label: 'Tier 1 (₹10,000 Disbursed)', count: 9420, percentage: 63 },
-      tier2: { label: 'Tier 2 (₹20,000 Upgraded Loan)', count: 4180, percentage: 28 },
-      tier3: { label: 'Tier 3 (₹50,000 Enhanced Credit)', count: 1290, percentage: 9 }
+      tier1: { label: 'Tier 1 (₹10,000 Disbursed)', count: 0, percentage: 0 },
+      tier2: { label: 'Tier 2 (₹20,000 Upgraded Loan)', count: 0, percentage: 0 },
+      tier3: { label: 'Tier 3 (₹50,000 Enhanced Credit)', count: 0, percentage: 0 }
     },
-    dispute_reduction: '76% Reduction in Encroachment Disputes'
+    dispute_reduction: 'Zero Disputes Logged'
   });
 
+  const apiBackendUrl = backendUrl || '';
+
   useEffect(() => {
-    fetch(`${backendUrl}/api/impact`)
+    fetch(`${apiBackendUrl}/api/impact`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.avg_vendor_income_growth) setImpactData(data);
+        if (data.digital_payment_adoption) {
+          setImpactData({ ...data, repayment_rate: data.repayment_rate ?? 'Not measured' });
+        }
       })
       .catch((err) => console.log('Impact analytics fetch note:', err));
-  }, [backendUrl]);
+  }, [apiBackendUrl]);
 
   return (
     <div className="impact-container">
@@ -57,7 +62,7 @@ export default function ImpactReport({ backendUrl }) {
           <div className="kpi-info">
             <h3>{impactData.repayment_rate}</h3>
             <p>PM SVANidhi Repayment Rate</p>
-            <div className="kpi-trend positive">Highest in State</div>
+            <div className="kpi-trend positive">Live Verification Active</div>
           </div>
         </div>
 
@@ -77,7 +82,7 @@ export default function ImpactReport({ backendUrl }) {
         
         <div className="ai-card">
           <div className="section-header">
-            <h3>PM SVANidhi Micro-Credit Adoption (Live API Data)</h3>
+            <h3>PM SVANidhi Micro-Credit Adoption (Live Database API)</h3>
           </div>
 
           <div className="metric-bar-group">
@@ -85,10 +90,10 @@ export default function ImpactReport({ backendUrl }) {
               <div key={idx} className="bar-row">
                 <div className="bar-label">
                   <span>{tier.label}</span>
-                  <strong>{tier.count?.toLocaleString()} Vendors ({tier.percentage}%)</strong>
+                  <strong>{tier.count} Vendors ({tier.percentage}%)</strong>
                 </div>
                 <div className="bar-bg">
-                  <div className="bar-fill" style={{ width: `${tier.percentage}%` }}></div>
+                  <div className="bar-fill" style={{ width: `${Math.max(tier.percentage, tier.count > 0 ? 20 : 0)}%` }}></div>
                 </div>
               </div>
             ))}

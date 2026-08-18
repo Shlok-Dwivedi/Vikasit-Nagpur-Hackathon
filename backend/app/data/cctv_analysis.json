@@ -1,0 +1,38 @@
+{
+    "ZONE_A": {
+        "zone_id": "ZONE_A",
+        "frames_analyzed": 20,
+        "average_people": 49.45,
+        "peak_people": 54,
+        "average_vehicles": 0.0,
+        "peak_vehicles": 0,
+        "congestion_score": 92
+    },
+    "ZONE_B": {
+        "zone_id": "ZONE_B",
+        "frames_analyzed": 20,
+        "average_people": 42.7,
+        "peak_people": 49,
+        "average_vehicles": 14.9,
+        "peak_vehicles": 22,
+        "congestion_score": 87
+    },
+    "ZONE_C": {
+        "zone_id": "ZONE_C",
+        "frames_analyzed": 20,
+        "average_people": 22.35,
+        "peak_people": 31,
+        "average_vehicles": 1.8,
+        "peak_vehicles": 6,
+        "congestion_score": 72
+    },
+    "ZONE_D": {
+        "zone_id": "ZONE_D",
+        "frames_analyzed": 20,
+        "average_people": 37.3,
+        "peak_people": 45,
+        "average_vehicles": 1.35,
+        "peak_vehicles": 4,
+        "congestion_score": 83
+    }
+}

@@ -9,13 +9,13 @@ import VendorManagement from './views/VendorManagement';
 import CertificateManagement from './views/CertificateManagement';
 import MobileInspector from './views/MobileInspector';
 import ImpactReport from './views/ImpactReport';
+import EnforcementIntel from './views/EnforcementIntel';
 import Login from './components/Login';
-import SarvamVoiceModal from './components/SarvamAI/SarvamVoiceModal';
-import { supabase } from './lib/supabase';
 
 import './App.css';
+import { supabase, getBackendUrl } from './lib/supabase';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://vikasit-nagpur-hackathon.onrender.com';
+const BACKEND_URL = getBackendUrl();
 
 export default function App() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -26,12 +26,40 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Sarvam Voice Modal State
-  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
-
   // Live Render Backend Health Status
   const [backendStatus, setBackendStatus] = useState({ online: false, loading: true });
 
+  // Supabase Google OAuth & Auth Session Listener
+  useEffect(() => {
+    if (!supabase) return;
+
+    const applySession = (session) => {
+      if (!session?.user) return;
+      const meta = session.user.user_metadata || {};
+      const userData = {
+        email: session.user.email,
+        role: meta.role || 'citizen',
+        name: meta.full_name || meta.name || session.user.email.split('@')[0],
+        department: meta.department || 'Citizen Vendor',
+        token: session.access_token
+      };
+      handleLoginSuccess(userData);
+    };
+
+    // Restore session if returning from Google OAuth redirect
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !currentUser) applySession(session);
+    });
+
+    // Listen to Google OAuth popup/redirect completion
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) applySession(session);
+    });
+
+    return () => listener?.subscription?.unsubscribe();
+  }, []);
+
+  // Backend Health Status Check
   useEffect(() => {
     fetch(`${BACKEND_URL}/`)
       .then((res) => res.json())
@@ -46,34 +74,6 @@ export default function App() {
       });
   }, []);
 
-  useEffect(() => {
-    if (!supabase) return;
-
-    const applySession = (session) => {
-      const userData = {
-        email: session.user.email,
-        role: session.user.user_metadata?.role || 'citizen',
-        name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
-        department: session.user.user_metadata?.department || 'Citizen Vendor',
-        token: session.access_token
-      };
-      handleLoginSuccess(userData);
-    };
-
-    // Restore session if this page load is the redirect-back from Google
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !currentUser) applySession(session);
-    });
-
-    // Catch any future auth state changes (e.g. Google popup/redirect completing)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && !currentUser) applySession(session);
-    });
-
-    return () => listener.subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
     localStorage.setItem('vv_user_session', JSON.stringify(userData));
@@ -81,6 +81,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    if (supabase) {
+      supabase.auth.signOut().catch(e => console.warn('Supabase signout note:', e));
+    }
     setCurrentUser(null);
     localStorage.removeItem('vv_user_session');
     localStorage.clear();
@@ -102,7 +105,6 @@ export default function App() {
         activeModule={safeActiveModule} 
         setActiveModule={setActiveModule} 
         currentUser={currentUser}
-        onOpenVoiceModal={() => setVoiceModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -138,15 +140,11 @@ export default function App() {
           {isOfficer && safeActiveModule === 'impact_reports' && (
             <ImpactReport backendUrl={BACKEND_URL} />
           )}
+          {isOfficer && safeActiveModule === 'enforcement_intel' && (
+            <EnforcementIntel backendUrl={BACKEND_URL} />
+          )}
         </main>
       </div>
-
-      {/* Multilingual Voice Assistant Modal */}
-      <SarvamVoiceModal 
-        isOpen={voiceModalOpen} 
-        onClose={() => setVoiceModalOpen(false)}
-        backendUrl={BACKEND_URL}
-      />
     </div>
   );
 }

@@ -16,7 +16,9 @@ class FootfallIntelligencePipeline:
             return self.fusion_service.fuse()
         
         # Fallback dynamic calculation
-        footfall = int(cv_count) if cv_count is not None else 480
+        if cv_count is None:
+            raise ValueError("cv_count is required")
+        footfall = int(cv_count)
         return {
             "pipeline": "Footfall Intelligence & Fusion",
             "footfall": footfall,

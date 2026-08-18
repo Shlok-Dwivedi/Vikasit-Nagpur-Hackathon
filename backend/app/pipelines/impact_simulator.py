@@ -6,37 +6,23 @@ Simulates relocating vendors and predicts footfall, income, congestion, safety a
 from typing import Dict, Any
 
 class WhatIfImpactSimulatorPipeline:
-    def simulate(self, vendor_density: int, traffic_weight: int, target_zone: str = "Zone B - VNIT Gate") -> Dict[str, Any]:
-        # Simulation Mathematics
-        congestion_reduction = int(traffic_weight * 0.42)
-        projected_income_growth = round(vendor_density * 0.28, 1)
-        shifted_vendors = int(vendor_density * 0.22)
-        safety_index_increase = round(traffic_weight * 0.35 + vendor_density * 0.15, 1)
-        projected_municipal_roi = round(14.5 + (vendor_density * 0.12), 1)
-
-        # Verifier Logic
-        verifier_passed = congestion_reduction >= 10 and projected_income_growth >= 5.0
-        verifier_status = "VERIFIED: High ROI & Safety Compliance" if verifier_passed else "WARNING: Minimal Impact Projected"
-
-        recommendation = (
-            f"Simulation verified: Relocating {shifted_vendors} vendors to {target_zone} reduces bottleneck "
-            f"congestion by {congestion_reduction}% and yields +{projected_income_growth}% vendor income growth."
-        )
+    def simulate(self, current_zone: Dict[str, Any], target_zone: Dict[str, Any]) -> Dict[str, Any]:
+        required = {"name", "capacity", "activeVendors", "customerAccess", "baselineFootfall"}
+        if not required.issubset(current_zone) or not required.issubset(target_zone):
+            raise ValueError("Both zones must contain recorded capacity, activity, access, and footfall data")
+        access_change = round(((target_zone["customerAccess"] - current_zone["customerAccess"]) / current_zone["customerAccess"]) * 100, 1)
+        footfall_change = round(((target_zone["baselineFootfall"] - current_zone["baselineFootfall"]) / current_zone["baselineFootfall"]) * 100, 1)
+        verifier_passed = target_zone["activeVendors"] <= target_zone["capacity"]
+        recommendation = f"{target_zone['name']} changes recorded customer access by {access_change:+.1f}% and footfall by {footfall_change:+.1f}%."
 
         return {
             "pipeline": "What-If Zoning & Impact Simulation",
-            "parameters": {
-                "vendor_density": vendor_density,
-                "traffic_weight": traffic_weight,
-                "target_zone": target_zone
-            },
+            "parameters": {"current_zone": current_zone["name"], "target_zone": target_zone["name"]},
             "predictions": {
-                "shifted_vendors": shifted_vendors,
-                "congestion_reduction": f"↓ {congestion_reduction}%",
-                "income_growth": f"↑ {projected_income_growth}%",
-                "safety_index_boost": f"↑ {safety_index_increase} Points",
-                "municipal_roi": f"{projected_municipal_roi}% Annual ROI"
+                "customer_access_change_pct": access_change,
+                "footfall_change_pct": footfall_change,
+                "target_capacity": target_zone["capacity"]
             },
-            "verifier_status": verifier_status,
+            "verifier_status": "VERIFIED" if verifier_passed else "CAPACITY WARNING",
             "recommendation": recommendation
         }

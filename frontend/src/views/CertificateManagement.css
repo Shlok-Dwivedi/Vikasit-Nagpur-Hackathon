@@ -1,146 +1,132 @@
-.cert-container {
-  padding: 28px;
+.certificate-container {
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.cert-grid {
+.certificate-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: 1.4fr 1fr;
   gap: 24px;
 }
 
 @media (max-width: 1024px) {
-  .cert-grid {
+  .certificate-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.cert-card-preview {
-  background: linear-gradient(135deg, var(--bg-card) 0%, #111115 100%) !important;
-  border: 2px solid rgba(99, 102, 241, 0.25) !important;
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(99, 102, 241, 0.1);
+.certificate-card {
+  background: linear-gradient(145deg, #0a0d14 0%, #111827 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 130, 246, 0.1);
   position: relative;
   overflow: hidden;
 }
 
-/* Holographic sheen animation */
-.cert-card-preview::before {
-  content: '';
+.cert-watermark {
   position: absolute;
-  top: -150%;
-  left: -150%;
-  width: 300%;
-  height: 300%;
-  background: linear-gradient(45deg, 
-    transparent 43%, 
-    rgba(99, 102, 241, 0.08) 47%, 
-    rgba(16, 185, 129, 0.06) 49%, 
-    rgba(251, 191, 36, 0.08) 51%, 
-    transparent 55%
-  );
+  right: -20px;
+  bottom: -20px;
+  font-size: 140px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.02);
   pointer-events: none;
-  animation: holoSweep 8s linear infinite;
-  z-index: 1;
+  user-select: none;
 }
 
-@keyframes holoSweep {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(50%, 50%);
-  }
-}
-
-.cert-header {
+.cert-header-box {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-bottom: 2px dashed var(--bg-card-border);
+  gap: 16px;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.12);
   padding-bottom: 20px;
   margin-bottom: 24px;
 }
 
-.emblem-title h2 {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--accent-primary);
-  letter-spacing: 0.5px;
-}
-
-.emblem-title p {
-  font-size: 0.775rem;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.qr-box {
-  width: 90px;
-  height: 90px;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 6px;
+.cert-emblem {
+  width: 54px;
+  height: 54px;
+  background: rgba(255, 153, 51, 0.15);
+  border: 1px solid rgba(255, 153, 51, 0.3);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-.qr-placeholder {
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    45deg,
-    #000,
-    #000 6px,
-    #fff 6px,
-    #fff 12px
-  );
-  border-radius: 4px;
-}
-
-.cert-body {
+.cert-details-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 20px;
 }
 
 .cert-field label {
   font-size: 0.725rem;
-  color: var(--text-subtle);
+  color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 700;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
 }
 
-.cert-field p {
-  font-size: 0.95rem;
+.cert-value {
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-main);
-  margin-top: 2px;
+  margin: 0;
 }
 
-.cert-footer-stamp {
+.cert-value.highlight {
+  color: #60a5fa;
+  font-family: monospace;
+  font-size: 1.1rem;
+}
+
+.cert-footer-box {
   margin-top: 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 16px;
-  border-top: 1px solid var(--bg-card-border);
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.stamp-badge {
+.cert-stamp {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  padding: 6px 14px;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  padding: 8px 16px;
   border-radius: 20px;
   font-weight: 800;
-  font-size: 0.8rem;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 0.825rem;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 480px;
+  background: #090d16;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
 }

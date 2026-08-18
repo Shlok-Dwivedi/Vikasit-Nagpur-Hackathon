@@ -16,10 +16,10 @@ def _clamp(value: float) -> float:
 
 
 class FootfallFusionService:
-    def __init__(self, dataset_baseline: float = 480.0) -> None:
+    def __init__(self, dataset_baseline: Optional[float] = None) -> None:
         self.dataset_value: Optional[float] = dataset_baseline
-        self.dataset_available = True
-        self.dataset_quality = 0.78
+        self.dataset_available = dataset_baseline is not None
+        self.dataset_quality = 0.78 if self.dataset_available else 0.0
         self.cv_value: Optional[float] = None
         self.cv_available = False
         self.cv_quality = 0.0
@@ -97,7 +97,7 @@ class FootfallFusionService:
         result = {
             "footfall": round(max(estimate, 0)),
             "uncertainty": round(uncertainty, 2),
-            "confidence": round(_clamp(quality_total / 2), 3),
+            "confidence": round(_clamp(quality_total / max(len(sources), 1)), 3),
             "sources_used": sources,
             "cv_weight": round(cv_weight, 3),
             "dataset_weight": round(dataset_weight, 3),

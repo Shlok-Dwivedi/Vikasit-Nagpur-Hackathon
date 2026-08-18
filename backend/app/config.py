@@ -4,10 +4,13 @@ from dotenv import load_dotenv
 # Load environment variables from .env file if available
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", os.getenv("VITE_SUPABASE_URL", "https://your-supabase-project.supabase.co"))
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", os.getenv("VITE_SUPABASE_ANON_KEY", ""))
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "").strip()
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
+OFFICER_PASSKEY = os.getenv("OFFICER_PASSKEY", "")
+FOOTFALL_BASELINE = float(os.environ["FOOTFALL_BASELINE"]) if os.getenv("FOOTFALL_BASELINE") else None
+NOTIFICATION_WEBHOOK_URL = os.getenv("NOTIFICATION_WEBHOOK_URL", "").strip()
 
 PORT = int(os.getenv("PORT", 8000))
 HOST = os.getenv("HOST", "0.0.0.0")
