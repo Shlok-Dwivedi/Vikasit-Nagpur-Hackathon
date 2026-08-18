@@ -1,152 +1,98 @@
 .sidebar {
   width: 260px;
-  min-width: 260px;
-  flex-shrink: 0;
-  background: var(--sidebar-bg);
-  backdrop-filter: blur(12px);
+  background: var(--bg-sidebar);
   border-right: 1px solid var(--bg-card-border);
   display: flex;
   flex-direction: column;
   height: 100vh;
   position: sticky;
   top: 0;
-  z-index: 100;
-  transition: all var(--transition-fast);
+  z-index: 10;
 }
 
-.sidebar-brand {
-  padding: 24px 20px;
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--bg-card-border);
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--bg-card-border);
 }
 
-.brand-icon {
-  width: 40px;
-  height: 40px;
+.logo-icon {
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #ff9933 0%, #8f4e00 100%);
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-accent) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(255, 153, 51, 0.3);
-  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
-.brand-info h2 {
-  font-size: 1.1rem;
+.brand-text h2 {
+  font-size: 1.05rem;
   font-weight: 800;
-  color: var(--text-main);
-  line-height: 1.2;
+  letter-spacing: -0.01em;
+  background: linear-gradient(to right, #ffffff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.brand-info p {
-  font-size: 0.725rem;
+.brand-text span {
+  font-size: 0.7rem;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
-.sidebar-menu {
-  flex: 1;
-  padding: 20px 12px;
+.sidebar-nav {
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  flex: 1;
   overflow-y: auto;
-}
-
-.menu-section-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-subtle);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 10px 12px 4px 12px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-radius: 8px;
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 500;
+  transition: all var(--transition-fast);
   background: transparent;
   width: 100%;
   text-align: left;
-  border-left: 3px solid transparent;
-  transition: all var(--transition-fast);
 }
 
 .nav-item:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.03);
-  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .nav-item.active {
-  color: var(--text-main);
-  background: rgba(99, 102, 241, 0.08);
-  border-left: 3px solid var(--accent-primary);
+  color: #ffffff;
+  background: var(--brand-primary);
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .nav-badge {
   margin-left: auto;
-  font-size: 0.675rem;
-  font-weight: 700;
-  background: rgba(99, 102, 241, 0.15);
-  color: var(--accent-primary);
+  font-size: 0.65rem;
   padding: 2px 6px;
-  border-radius: 6px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid var(--bg-card-border);
-}
-
-.sarvam-widget {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(16, 185, 129, 0.1) 100%);
-  border: 1px solid var(--bg-card-border);
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-}
-
-.sarvam-widget:hover {
-  transform: translateY(-2px);
-}
-
-.sarvam-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  flex-shrink: 0;
-}
-
-.sarvam-text p {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.sarvam-text span {
-  font-size: 0.675rem;
-  color: var(--text-muted);
 }
