@@ -46,12 +46,19 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
   const [performance, setPerformance] = useState(null);
   const [candidateZones, setCandidateZones] = useState([]);
   const [performanceError, setPerformanceError] = useState('');
+  const [geminiAnalysis, setGeminiAnalysis] = useState(null);
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [geminiError, setGeminiError] = useState('');
+  const [geminiModel, setGeminiModel] = useState('');
 
   const [cctvData, setCctvData] = useState(null);
   const [cctvLoading, setCctvLoading] = useState(true);
   const [selectedCctvZone, setSelectedCctvZone] = useState('ZONE_B');
   const [allZones, setAllZones] = useState([]);
   const [allZonesLoading, setAllZonesLoading] = useState(true);
+  const [designatedZone, setDesignatedZone] = useState(null);
+  const [designatedZoneLoading, setDesignatedZoneLoading] = useState(true);
+
   const [isDarkTheme, setIsDarkTheme] = useState(
     () => (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light'
   );
@@ -142,19 +149,80 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
     };
     loadZonePerformance();
   }, [apiBackendUrl]);
-  const isOutsideZone = vendorLocation ? !pointInsidePolygon(vendorLocation, DESIGNATED_ZONE.boundary) : false;
-  const activity = performance?.activity || [];
+
+  // Fetch the vendor's designated zone from backend
+  useEffect(() => {
+    if (officerMode) return;
+    const fetchDesignatedZone = async () => {
+      // Determine which zone ID to load: from vendor session, or default to ZONE-B
+      const savedSession = localStorage.getItem('vv_user_session');
+      let zoneId = 'ZONE-B';
+      if (savedSession) {
+        try {
+          const parsed = JSON.parse(savedSession);
+          const assignedZone = parsed?.vendorData?.assignedZone;
+          if (assignedZone) zoneId = assignedZone;
+        } catch {}
+      }
+      try {
+        const res = await fetch(`${apiBackendUrl}/api/zones/${zoneId}/full`);
+        if (!res.ok) throw new Error('Zone data unavailable');
+        const data = await res.json();
+        if (data.zone) {
+          // Map backend fields to what the UI expects
+          const z = data.zone;
+          setDesignatedZone({
+            ...z,
+            slot: z.defaultSlot ?? 18,
+          });
+        }
+      } catch {
+        // Fallback: load from /api/zones list
+        try {
+          const res2 = await fetch(`${apiBackendUrl}/api/zones`);
+          const data2 = await res2.json();
+          const found = (data2.zones || []).find(z => z.id === zoneId) || (data2.zones || [])[0];
+          if (found) setDesignatedZone({ ...found, slot: found.defaultSlot ?? 18 });
+        } catch {}
+      } finally {
+        setDesignatedZoneLoading(false);
+      }
+    };
+    fetchDesignatedZone();
+  }, [apiBackendUrl, officerMode]);
+
+
+  const isOutsideZone = (vendorLocation && designatedZone?.boundary)
+    ? !pointInsidePolygon(vendorLocation, designatedZone.boundary)
+    : false;
+
 
   const runSimulation = async () => {
     if (!selectedZone) return;
     setSimulationLoading(true);
     setSimulationError('');
     setSimulation(null);
+    setGeminiAnalysis(null);
+    setGeminiError('');
+    setGeminiLoading(true);
+
+    // Determine current zone id from designatedZone
+    const currentZoneId = designatedZone?.id || 'ZONE-B';
+
     try {
-      const simulationResponse = await fetch(`${apiBackendUrl}/api/pipelines/what-if-simulation`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_zone_id: 'ZONE-B', target_zone_id: selectedZone })
-      });
+      // Run standard pipeline + Gemini analysis in parallel
+      const [simulationResponse, geminiResponse] = await Promise.all([
+        fetch(`${apiBackendUrl}/api/pipelines/what-if-simulation`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_zone_id: currentZoneId, target_zone_id: selectedZone })
+        }),
+        fetch(`${apiBackendUrl}/api/simulation/gemini-analysis`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_zone_id: currentZoneId, target_zone_id: selectedZone })
+        })
+      ]);
+
+      // Process pipeline result
       if (!simulationResponse.ok) throw new Error('The what-if simulation could not be completed.');
       const result = await simulationResponse.json();
       if (result.status !== 'success') throw new Error(result.error || 'The what-if simulation could not be completed.');
@@ -166,10 +234,25 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
         accessChange: comparison.customer_access_change_pct,
         confidence: Math.round(result.data.simulation_confidence * 100)
       });
+
+      // Process Gemini result
+      if (geminiResponse.ok) {
+        const geminiData = await geminiResponse.json();
+        if (geminiData.status === 'success' && geminiData.gemini_analysis) {
+          setGeminiAnalysis(geminiData.gemini_analysis);
+          setGeminiModel(geminiData.model || 'gemini');
+        } else {
+          setGeminiError(geminiData.error || 'Gemini analysis could not be generated.');
+        }
+      } else {
+        setGeminiError('Gemini service unavailable.');
+      }
     } catch (error) {
       setSimulationError(error.message);
+      setGeminiError('Simulation failed before Gemini analysis could run.');
     } finally {
       setSimulationLoading(false);
+      setGeminiLoading(false);
     }
   };
 
@@ -305,8 +388,36 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
   }
   // ── END OFFICER VIEW ────────────────────────────────────────────────────
 
+  const activity = performance?.activity || [];
+
+  // Show loading while fetching zone
+  if (!officerMode && designatedZoneLoading) {
+    return (
+      <div className="zone-locator-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '12px' }}>📍</div>
+          <p style={{ fontWeight: 600 }}>Loading your designated zone…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If zone couldn't be loaded
+  if (!officerMode && !designatedZone) {
+    return (
+      <div className="zone-locator-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <div style={{ textAlign: 'center', color: '#f87171' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '12px' }}>⚠️</div>
+          <p style={{ fontWeight: 600 }}>Could not load zone data.</p>
+          <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>Make sure the backend is running on port 8000.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="zone-locator-page">
+
       {/* Zone Selection & CCTV Analytics Section */}
       <section className="cctv-analytics-section">
         <div className="cctv-header">
@@ -371,7 +482,7 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
       </div>
 
       <section className="zone-map-shell" aria-label="Current designated vending zone map">
-        <MapContainer center={DESIGNATED_ZONE.center} zoom={17} scrollWheelZoom zoomControl={false} className="zone-locator-map">
+        <MapContainer center={designatedZone.center} zoom={17} scrollWheelZoom zoomControl={false} className="zone-locator-map">
           <TileLayer
             attribution='&copy; OpenStreetMap contributors &copy; CARTO'
             url={isDarkTheme
@@ -379,12 +490,14 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
               : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
             }
           />
-          <Polygon positions={DESIGNATED_ZONE.boundary} pathOptions={{ color: '#8b5cf6', weight: 4, fillColor: '#6d5dfc', fillOpacity: 0.24 }}>
+          <Polygon positions={designatedZone.boundary} pathOptions={{ color: '#8b5cf6', weight: 4, fillColor: '#6d5dfc', fillOpacity: 0.24 }}>
+
             <Tooltip sticky>Authorized vending boundary</Tooltip>
           </Polygon>
-          {isOutsideZone && <Polyline positions={[vendorLocation, DESIGNATED_ZONE.center]} pathOptions={{ color: '#a5b4fc', weight: 2, dashArray: '7 9', opacity: 0.75 }} />}
-          <Marker position={DESIGNATED_ZONE.center} icon={zoneMarker}>
-            <Popup>{DESIGNATED_ZONE.name}<br />Assigned Slot #{DESIGNATED_ZONE.slot}</Popup>
+          {isOutsideZone && <Polyline positions={[vendorLocation, designatedZone.center]} pathOptions={{ color: '#a5b4fc', weight: 2, dashArray: '7 9', opacity: 0.75 }} />}
+          <Marker position={designatedZone.center} icon={zoneMarker}>
+            <Popup>{designatedZone.name}<br />Assigned Slot #{designatedZone.slot}</Popup>
+
           </Marker>
           {vendorLocation && (
             <Marker position={vendorLocation} icon={locationMarker}>
@@ -395,13 +508,14 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
 
         <aside className="zone-status-card">
           <span className="zone-card-label">Your Designated Zone</span>
-          <h3>{DESIGNATED_ZONE.name}</h3>
-          <span className="zone-active-badge">{DESIGNATED_ZONE.status}</span>
+          <h3>{designatedZone.name}</h3>
+          <span className="zone-active-badge">{designatedZone.status}</span>
           <dl>
-            <div><dt>Capacity</dt><dd>{DESIGNATED_ZONE.capacity} vendors</dd></div>
-            <div><dt>Your Slot</dt><dd>#{DESIGNATED_ZONE.slot}</dd></div>
-            <div><dt>Valid Until</dt><dd>{DESIGNATED_ZONE.validUntil}</dd></div>
+            <div><dt>Capacity</dt><dd>{designatedZone.capacity} vendors</dd></div>
+            <div><dt>Your Slot</dt><dd>#{designatedZone.slot}</dd></div>
+            <div><dt>Valid Until</dt><dd>{designatedZone.validUntil}</dd></div>
           </dl>
+
         </aside>
 
         <div className="zone-map-legend" aria-label="Map legend">
@@ -413,12 +527,12 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
         <aside className="zone-summary-card">
           <div className="zone-summary-title">
             <div className="zone-summary-icon"><Store size={21} /></div>
-            <div><h3>{DESIGNATED_ZONE.name}</h3><p>Authorized vending zone</p></div>
+            <div><h3>{designatedZone.name}</h3><p>Authorized vending zone</p></div>
           </div>
           <div className="zone-summary-stats">
-            <div><strong>{DESIGNATED_ZONE.capacity}</strong><span>Available Capacity</span></div>
-            <div><strong>{DESIGNATED_ZONE.slot}</strong><span>Your Slot</span></div>
-            <div><strong className="active-value">{DESIGNATED_ZONE.status}</strong><span>Certificate Status</span></div>
+            <div><strong>{designatedZone.capacity}</strong><span>Available Capacity</span></div>
+            <div><strong>{designatedZone.slot}</strong><span>Your Slot</span></div>
+            <div><strong className="active-value">{designatedZone.status}</strong><span>Certificate Status</span></div>
           </div>
           <button type="button" className="zone-details-button" onClick={() => setDetailsOpen(true)}>View Zone Details <ArrowRight size={17} /></button>
         </aside>
@@ -463,7 +577,8 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
         <div className="locator-section-heading"><div><span className="zone-locator-eyebrow">OPTIONAL SIMULATION</span><h2>What If You Move?</h2><p>Compare your current zone with another possible vending zone.</p></div></div>
         <div className="simulation-builder">
           <article className="current-zone-compare">
-            <span className="compare-label">CURRENT ZONE</span><h3>{DESIGNATED_ZONE.name}</h3>
+            <span className="compare-label">CURRENT ZONE</span><h3>{designatedZone.name}</h3>
+
             <dl><div><dt>Customer Access</dt><dd>{performance?.customerAccess ?? '—'}/10</dd></div><div><dt>Footfall</dt><dd>{performance ? performance.footfall.toLocaleString() : '—'}/hr</dd></div><div><dt>Capacity</dt><dd>{performance?.capacity ?? '—'} vendors</dd></div></dl>
           </article>
           <div className="simulation-control">
@@ -481,12 +596,70 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
             <div className="simulation-result-header"><div><span className="zone-locator-eyebrow">SIMULATION RESULT</span><h3>Current vs Simulated</h3></div><span>{simulation.zone}</span></div>
             <div className="comparison-table" role="table" aria-label="Current and simulated zone comparison">
               <div className="comparison-row comparison-head" role="row"><span>Metric</span><span>Current</span><span>Simulated</span></div>
-              <div className="comparison-row" role="row"><span>Customer Access</span><strong>{performance?.customerAccess}</strong><strong>{simulation.access}</strong></div>
-              <div className="comparison-row" role="row"><span>Pedestrian Flow</span><strong>{performance?.footfall.toLocaleString()}/hr</strong><strong>{simulation.footfall.toLocaleString()}/hr</strong></div>
+              <div className="comparison-row" role="row"><span>Customer Access</span><strong>{performance?.customerAccess}</strong><strong style={{ color: simulation.access > (performance?.customerAccess || 0) ? '#34d399' : '#f87171' }}>{simulation.access} {simulation.access > (performance?.customerAccess || 0) ? '↑' : '↓'}</strong></div>
+              <div className="comparison-row" role="row"><span>Pedestrian Flow</span><strong>{performance?.footfall?.toLocaleString()}/hr</strong><strong style={{ color: simulation.footfall > (performance?.footfall || 0) ? '#34d399' : '#f87171' }}>{simulation.footfall.toLocaleString()}/hr {simulation.footfall > (performance?.footfall || 0) ? '↑' : '↓'}</strong></div>
               <div className="comparison-row" role="row"><span>Vendor Capacity</span><strong>{performance?.capacity}</strong><strong>{simulation.capacity}</strong></div>
-              <div className="comparison-row" role="row"><span>Livelihood Potential</span><strong>8.1</strong><strong>{simulation.livelihood}</strong></div>
+              <div className="comparison-row" role="row"><span>Livelihood Potential</span><strong>{designatedZone?.livelihoodPotential ?? '—'}</strong><strong style={{ color: simulation.livelihood > (designatedZone?.livelihoodPotential || 0) ? '#34d399' : '#f87171' }}>{simulation.livelihood} {simulation.livelihood > (designatedZone?.livelihoodPotential || 0) ? '↑' : '↓'}</strong></div>
+              <div className="comparison-row" role="row"><span>Access Change</span><strong>—</strong><strong style={{ color: simulation.accessChange >= 0 ? '#34d399' : '#f87171' }}>{simulation.accessChange >= 0 ? '+' : ''}{simulation.accessChange}%</strong></div>
             </div>
-            <aside className="simulation-insight"><div><Sparkles size={18} /><strong>AI Simulation Insight</strong></div><p>This zone could provide approximately {simulation.accessChange}% change in customer access based on the recorded zone data.</p><span>Simulation Confidence: {simulation.confidence}%</span></aside>
+
+            {/* ── Gemini Detailed Analysis Panel ── */}
+            <div className="gemini-analysis-panel">
+              <div className="gemini-analysis-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="gemini-badge">✦ Gemini AI</div>
+                  <div>
+                    <strong style={{ fontSize: '1rem', color: 'var(--text-main)' }}>Detailed Advisory Report</strong>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>AI-powered analysis using live zone simulation data</p>
+                  </div>
+                </div>
+                {geminiModel && <span className="gemini-model-tag">{geminiModel}</span>}
+              </div>
+
+              {geminiLoading && (
+                <div className="gemini-loading">
+                  <div className="gemini-spinner" />
+                  <span>Gemini AI is analysing the zone data and generating your advisory report…</span>
+                </div>
+              )}
+
+              {geminiError && !geminiLoading && (
+                <div className="gemini-error">
+                  <span>⚠ {geminiError}</span>
+                </div>
+              )}
+
+              {geminiAnalysis && !geminiLoading && (
+                <div className="gemini-analysis-body">
+                  {geminiAnalysis.split('\n').map((line, i) => {
+                    const t = line.trim();
+                    if (!t) return <div key={i} className="gemini-spacer" />;
+
+                    // ## or ### heading
+                    if (/^#{1,3}\s/.test(t)) {
+                      return <h4 key={i} className="gemini-section-heading">{t.replace(/^#{1,3}\s+/, '')}</h4>;
+                    }
+
+                    // **Bold heading** on its own line (whole line is bolded)
+                    if (/^\*\*[^*]+\*\*\s*$/.test(t)) {
+                      return <h4 key={i} className="gemini-section-heading">{t.replace(/\*\*/g, '')}</h4>;
+                    }
+
+                    // Replace inline **bold** with <strong>
+                    const html = t
+                      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+                    // Bullet
+                    if (/^[-•*]\s/.test(t)) {
+                      return <p key={i} className="gemini-bullet" dangerouslySetInnerHTML={{ __html: '• ' + html.replace(/^[-•*]\s+/, '') }} />;
+                    }
+
+                    return <p key={i} className="gemini-para" dangerouslySetInnerHTML={{ __html: html }} />;
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </section>
@@ -503,16 +676,17 @@ export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode =
           <section className="zone-detail-panel" role="dialog" aria-modal="true" aria-labelledby="zone-detail-title" onMouseDown={(event) => event.stopPropagation()}>
             <button type="button" className="zone-detail-close" aria-label="Close zone details" onClick={() => setDetailsOpen(false)}><X size={20} /></button>
             <span className="zone-locator-eyebrow">AUTHORIZED ZONE DETAILS</span>
-            <h2 id="zone-detail-title">{DESIGNATED_ZONE.name}</h2>
-            <span className="zone-active-badge">{DESIGNATED_ZONE.status}</span>
+            <h2 id="zone-detail-title">{designatedZone.name}</h2>
+            <span className="zone-active-badge">{designatedZone.status}</span>
             <div className="zone-detail-grid">
-              <div><MapPin size={18} /><span>Exact designated area</span><strong>{DESIGNATED_ZONE.area}</strong></div>
-              <div><Clock3 size={18} /><span>Operating hours</span><strong>{DESIGNATED_ZONE.operatingHours}</strong></div>
-              <div><Store size={18} /><span>Vendor capacity</span><strong>{DESIGNATED_ZONE.capacity} vendors</strong></div>
-              <div><Navigation size={18} /><span>Assigned slot</span><strong>Slot #{DESIGNATED_ZONE.slot}</strong></div>
-              <div><ShieldCheck size={18} /><span>Certificate validity</span><strong>Until {DESIGNATED_ZONE.validUntil}</strong></div>
+              <div><MapPin size={18} /><span>Exact designated area</span><strong>{designatedZone.area}</strong></div>
+              <div><Clock3 size={18} /><span>Operating hours</span><strong>{designatedZone.operatingHours}</strong></div>
+              <div><Store size={18} /><span>Vendor capacity</span><strong>{designatedZone.capacity} vendors</strong></div>
+              <div><Navigation size={18} /><span>Assigned slot</span><strong>Slot #{designatedZone.slot}</strong></div>
+              <div><ShieldCheck size={18} /><span>Certificate validity</span><strong>Until {designatedZone.validUntil}</strong></div>
             </div>
-            <div className="zone-rules"><h3>Zone rules</h3><ol>{DESIGNATED_ZONE.rules.map((rule) => <li key={rule}>{rule}</li>)}</ol></div>
+            <div className="zone-rules"><h3>Zone rules</h3><ol>{(designatedZone.rules || []).map((rule) => <li key={rule}>{rule}</li>)}</ol></div>
+
           </section>
         </div>
       )}

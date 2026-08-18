@@ -1,6 +1,6 @@
 .sidebar {
   width: 260px;
-  background: var(--bg-sidebar);
+  background: var(--sidebar-bg, var(--bg-secondary));
   border-right: 1px solid var(--bg-card-border);
   display: flex;
   flex-direction: column;
@@ -9,6 +9,7 @@
   top: 0;
   z-index: 10;
 }
+
 
 .sidebar-header {
   padding: 20px 16px;
@@ -34,10 +35,15 @@
   font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: -0.01em;
-  background: linear-gradient(to right, #ffffff, #94a3b8);
+  color: var(--text-main);
+}
+
+[data-theme='light'] .brand-text h2 {
+  background: linear-gradient(to right, #1e1b4b, #4f46e5);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
 
 .brand-text span {
   font-size: 0.7rem;
@@ -73,8 +79,9 @@
 
 .nav-item:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(99, 102, 241, 0.08);
 }
+
 
 .nav-item.active {
   color: #ffffff;
@@ -88,9 +95,15 @@
   font-size: 0.65rem;
   padding: 2px 6px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-primary);
 }
+
+[data-theme='light'] .nav-badge {
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+}
+
 
 .sidebar-footer {
   padding: 16px;

@@ -8,6 +8,8 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "").strip()
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SARVAM_API_KEY = ""  # Removed - Sarvam AI not used
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+
 
 OFFICER_PASSKEY = os.getenv("OFFICER_PASSKEY", "")
 FOOTFALL_BASELINE = float(os.environ["FOOTFALL_BASELINE"]) if os.getenv("FOOTFALL_BASELINE") else None

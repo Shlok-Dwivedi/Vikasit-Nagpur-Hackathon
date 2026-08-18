@@ -21,6 +21,8 @@ from app.opencv_service import OpenCVImageError, opencv_service
 from app.pipelines.registry import PipelineRegistry
 from app.pipelines.executor import DynamicPipelineExecutor
 from app.pipelines.langgraph_orchestrator import LangGraphAgenticOrchestrator
+from app.gemini_service import generate_simulation_analysis
+
 
 
 app = FastAPI(
@@ -184,6 +186,42 @@ async def run_pipeline2_impact_simulator(req: AIRezoneRequest):
         "cv_count": current["baselineFootfall"], "current_zone": current, "simulated_zone": target,
     }
     return dynamic_executor.execute_pipeline("what_if_zoning_impact_simulation", params)
+
+
+@app.post("/api/simulation/gemini-analysis")
+async def run_gemini_simulation_analysis(req: AIRezoneRequest):
+    """Calls Gemini AI to produce a detailed narrative advisory for zone relocation."""
+    current = get_zone_or_404(req.current_zone_id)
+    target = get_zone_or_404(req.target_zone_id)
+
+    # Compute base metrics
+    access_change = round(
+        ((target["customerAccess"] - current["customerAccess"]) / max(current["customerAccess"], 0.01)) * 100, 1
+    )
+    footfall_change = round(
+        ((target["baselineFootfall"] - current["baselineFootfall"]) / max(current["baselineFootfall"], 1)) * 100, 1
+    )
+    utilisation = round((target["activeVendors"] / max(target["capacity"], 1)) * 100, 1)
+    verifier = "VERIFIED" if target["activeVendors"] < target["capacity"] else "CAPACITY WARNING"
+
+    metrics = {
+        "access_change": access_change,
+        "footfall_change": footfall_change,
+        "utilisation": utilisation,
+        "verifier": verifier,
+    }
+
+    result = generate_simulation_analysis(current, target, metrics)
+    return {
+        "status": result["status"],
+        "current_zone": current["name"],
+        "target_zone": target["name"],
+        "metrics": metrics,
+        "gemini_analysis": result.get("analysis"),
+        "model": result.get("model", "gemini-2.0-flash"),
+        "error": result.get("message") if result["status"] != "success" else None,
+    }
+
 
 @app.post("/api/pipelines/footfall-fusion")
 async def run_pipeline3_footfall_fusion(req: FootfallFusionRequest):

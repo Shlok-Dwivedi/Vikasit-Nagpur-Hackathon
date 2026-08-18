@@ -124,3 +124,166 @@
 @media (max-width: 900px) { .cctv-metrics-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 620px) { .cctv-metrics-grid { grid-template-columns: repeat(2, 1fr); } }
 
+/* ── GEMINI DETAILED ANALYSIS PANEL ─────────────────────── */
+.gemini-analysis-panel {
+  margin-top: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(10, 12, 20, 0.6);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(79, 70, 229, 0.12), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.gemini-analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.18);
+  background: linear-gradient(135deg, rgba(79,70,229,0.14) 0%, rgba(124,58,237,0.08) 100%);
+}
+
+.gemini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(79,70,229,0.35);
+}
+
+.gemini-model-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* Loading spinner */
+.gemini-loading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 20px;
+  color: #a5b4fc;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.gemini-spinner {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: gemini-spin 0.75s linear infinite;
+}
+
+@keyframes gemini-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error state */
+.gemini-error {
+  padding: 16px 20px;
+  color: #fca5a5;
+  font-size: 0.78rem;
+  background: rgba(239, 68, 68, 0.07);
+}
+
+/* Report body */
+.gemini-analysis-body {
+  padding: 22px 24px;
+  line-height: 1.7;
+}
+
+.gemini-spacer {
+  height: 8px;
+}
+
+.gemini-section-heading {
+  margin: 20px 0 8px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #c4b5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.18);
+}
+
+.gemini-section-heading:first-child {
+  margin-top: 0;
+}
+
+.gemini-para {
+  margin: 0 0 10px;
+  font-size: 0.84rem;
+  color: #b7c3d4;
+  line-height: 1.7;
+}
+
+.gemini-para strong { color: #e2e8f0; }
+
+.gemini-bullet {
+  margin: 4px 0 4px 12px;
+  font-size: 0.82rem;
+  color: #a8b8cc;
+  line-height: 1.65;
+}
+
+.gemini-bullet strong { color: #e2e8f0; }
+
+/* Light theme overrides */
+[data-theme='light'] .gemini-analysis-panel {
+  background: #ffffff;
+  border-color: rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
+}
+
+[data-theme='light'] .gemini-analysis-header {
+  background: linear-gradient(135deg, rgba(79,70,229,0.07), rgba(124,58,237,0.04));
+  border-bottom-color: rgba(79, 70, 229, 0.12);
+}
+
+[data-theme='light'] .gemini-section-heading {
+  color: #4f46e5;
+  border-bottom-color: rgba(79, 70, 229, 0.15);
+}
+
+[data-theme='light'] .gemini-para {
+  color: #374151;
+}
+
+[data-theme='light'] .gemini-para strong {
+  color: #111827;
+}
+
+[data-theme='light'] .gemini-bullet {
+  color: #4b5563;
+}
+
+[data-theme='light'] .gemini-bullet strong {
+  color: #111827;
+}
+
+[data-theme='light'] .gemini-loading {
+  color: #4f46e5;
+}
+
+[data-theme='light'] .gemini-model-tag {
+  color: #4f46e5;
+  border-color: rgba(79, 70, 229, 0.2);
+  background: rgba(79, 70, 229, 0.06);
+}
