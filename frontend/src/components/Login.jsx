@@ -78,7 +78,7 @@ export default function Login({ onLoginSuccess }) {
 
     // SPECIAL OFFICER SECURITY AUTHENTICATION CHECK
     if (role === 'authority') {
-      const cleanKey = badgeKey.trim().toUpperCase();
+      const cleanKey = badgeKey.trim();
       if (!cleanKey) {
         setMessage({ type: 'error', text: 'Municipal Officer Security Passkey is required.' });
         setLoading(false);
@@ -100,7 +100,7 @@ export default function Login({ onLoginSuccess }) {
         }
         sessionStorage.setItem('vv_officer_token', clearance.officer_token);
       } catch (err) {
-        setMessage({ type: 'error', text: 'Officer authentication service is unavailable.' });
+        setMessage({ type: 'error', text: 'Cannot reach backend server. Make sure uvicorn is running on port 8000.' });
         setLoading(false);
         return;
       }
@@ -215,7 +215,12 @@ export default function Login({ onLoginSuccess }) {
             <Building2 size={14} />
             <span>Viksit Vyapari Civic Portal</span>
           </div>
-          <h1>{mode === 'register' ? 'Street Vendor Permit Application' : 'Sign In to Portal'}</h1>
+          <h1>
+            {role === 'authority'
+              ? (mode === 'register' ? 'Officer Registration Portal' : 'Sign In to Portal')
+              : (mode === 'register' ? 'Street Vendor Permit Application' : 'Sign In to Portal')
+            }
+          </h1>
           <p>{role === 'citizen' ? 'Submit your vending application for Instant Permit & Certificate Issuance' : 'Municipal Officer Portal Access'}</p>
         </div>
 
@@ -254,7 +259,7 @@ export default function Login({ onLoginSuccess }) {
             className={`tab-btn ${mode === 'register' ? 'active' : ''}`}
             onClick={() => { setMode('register'); setMessage(null); }}
           >
-            Vendor Application
+            {role === 'authority' ? 'Officer Registration' : 'Vendor Application'}
           </button>
           <button
             type="button"
@@ -277,13 +282,13 @@ export default function Login({ onLoginSuccess }) {
         <form className="auth-form" onSubmit={handleSubmit}>
           
           <div className="form-group">
-            <label>Vendor Full Name</label>
+            <label>{role === 'authority' ? 'Officer Full Name' : 'Vendor Full Name'}</label>
             <div className="input-container">
               <User size={18} className="input-icon" />
               <input
                 type="text"
                 required
-                placeholder="e.g. Sujal Tembhare"
+                placeholder={role === 'authority' ? 'e.g. Rahul Sharma' : 'e.g. Sujal Tembhare'}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="form-input"
@@ -438,10 +443,15 @@ export default function Login({ onLoginSuccess }) {
 
           <button type="submit" className="submit-btn" disabled={loading} style={{ marginTop: '12px' }}>
             {loading ? (
-              <span>Submitting Application...</span>
+              <span>{role === 'authority' && mode === 'register' ? 'Registering Officer...' : 'Submitting...'}</span>
             ) : (
               <>
-                <span>{mode === 'register' ? 'Submit Application for Officer Approval' : `Sign In as ${role === 'citizen' ? 'Vendor' : 'Officer'}`}</span>
+                <span>
+                  {mode === 'register'
+                    ? (role === 'authority' ? 'Register as Municipal Officer' : 'Submit Application for Officer Approval')
+                    : `Sign In as ${role === 'citizen' ? 'Vendor' : 'Officer'}`
+                  }
+                </span>
                 <ArrowRight size={18} />
               </>
             )}

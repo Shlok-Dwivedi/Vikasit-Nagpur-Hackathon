@@ -165,6 +165,17 @@ export default function LeafletMap({
   const [searchedLocationName, setSearchedLocationName] = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(
+    () => (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light'
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDarkTheme(document.documentElement.getAttribute('data-theme') !== 'light');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (refreshKey > 0) {
@@ -315,10 +326,17 @@ export default function LeafletMap({
         <DynamicMapController targetCoords={targetCoords} refreshKey={refreshKey} />
 
         <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="CartoDB Dark Theme">
+          <LayersControl.BaseLayer checked={isDarkTheme} name="CartoDB Dark Theme">
             <TileLayer
               attribution='&copy; CARTO'
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            />
+          </LayersControl.BaseLayer>
+
+          <LayersControl.BaseLayer checked={!isDarkTheme} name="CartoDB Light Theme">
+            <TileLayer
+              attribution='&copy; CARTO'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             />
           </LayersControl.BaseLayer>
 

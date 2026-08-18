@@ -35,5 +35,5 @@ export const getBackendUrl = () => {
   if (envUrl && !envUrl.includes('supabase.co') && envUrl.startsWith('http')) {
     return envUrl.replace(/\/+$/, '');
   }
-  return '';
+  return 'http://localhost:8000'; // Local development default
 };

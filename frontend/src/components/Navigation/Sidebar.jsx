@@ -29,12 +29,13 @@ export default function Sidebar({ activeModule, setActiveModule, currentUser }) 
   const officerItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'vendor_management', label: 'Vendor Directory', icon: Users, adminOnly: true },
-    { id: 'zone_optimizer', label: 'Current Zone', icon: Map },
+    { id: 'zone_management', label: 'Zone Management', icon: Map, adminOnly: true },
     { id: 'certificate_management', label: 'Certificate Portal', icon: FileCheck },
     { id: 'mobile_inspector', label: 'Mobile Inspector', icon: Smartphone, adminOnly: true },
     { id: 'enforcement_intel', label: 'Enforcement Intel', icon: AlertTriangle, adminOnly: true },
     { id: 'impact_reports', label: 'Executive Analytics', icon: BarChart3, adminOnly: true },
   ];
+
 
   const menuItems = isOfficer ? officerItems : citizenItems;
 

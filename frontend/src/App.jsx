@@ -95,8 +95,10 @@ export default function App() {
 
   // Guard against citizens accessing admin-only modules
   const isOfficer = currentUser.role === 'authority';
-  const isModuleAllowed = isOfficer || ['dashboard', 'vendor_profile', 'zone_optimizer', 'certificate_management'].includes(activeModule);
+  const allowedCitizenModules = ['dashboard', 'vendor_profile', 'zone_optimizer', 'certificate_management'];
+  const isModuleAllowed = isOfficer || allowedCitizenModules.includes(activeModule);
   const safeActiveModule = isModuleAllowed ? activeModule : 'dashboard';
+
 
   return (
     <div className="app-layout">
@@ -123,16 +125,20 @@ export default function App() {
           {safeActiveModule === 'vendor_profile' && (
             <VendorProfile currentUser={currentUser} backendUrl={BACKEND_URL} />
           )}
-          {safeActiveModule === 'zone_optimizer' && (
+          {/* Vendor-only: Current Designated Zone Locator */}
+          {!isOfficer && safeActiveModule === 'zone_optimizer' && (
             <AIZoneOptimizer backendUrl={BACKEND_URL} currentUser={currentUser} />
           )}
+
           {safeActiveModule === 'certificate_management' && (
             <CertificateManagement backendUrl={BACKEND_URL} currentUser={currentUser} />
           )}
 
-          {/* Admin / Officer Only Views */}
           {isOfficer && safeActiveModule === 'vendor_management' && (
             <VendorManagement backendUrl={BACKEND_URL} />
+          )}
+          {isOfficer && safeActiveModule === 'zone_management' && (
+            <AIZoneOptimizer backendUrl={BACKEND_URL} currentUser={currentUser} officerMode={true} />
           )}
           {isOfficer && safeActiveModule === 'mobile_inspector' && (
             <MobileInspector backendUrl={BACKEND_URL} />

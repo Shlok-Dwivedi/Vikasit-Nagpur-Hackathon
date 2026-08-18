@@ -2,43 +2,119 @@
   "zones": [
     {
       "id": "ZONE-B",
-      "name": "Zone B – VNIT Gate",
+      "name": "Zone B \u2013 VNIT Gate",
+      "area": "VNIT Main Gate vending bay, South Ambazari Road, Nagpur",
+      "status": "ACTIVE",
       "capacity": 35,
       "activeVendors": 31,
+      "defaultSlot": 18,
       "customerAccess": 8.4,
       "livelihoodPotential": 8.1,
       "baselineFootfall": 2140,
-      "operatingHours": "7:00 AM – 9:00 PM",
+      "operatingHours": "7:00 AM \u2013 9:00 PM",
       "validUntil": "17 Aug 2027",
+      "center": [21.1237, 79.0516],
+      "boundary": [
+        [21.12445, 79.05065],
+        [21.12450, 79.05250],
+        [21.12305, 79.05265],
+        [21.12285, 79.05085]
+      ],
       "activity": [1680, 1840, 1910, 2050, 2210, 2480, 2140],
-      "vendorActivity": [27, 29, 30, 30, 32, 34, 31]
+      "vendorActivity": [27, 29, 30, 30, 32, 34, 31],
+      "rules": [
+        "Operate only inside the marked zone boundary.",
+        "Keep the pedestrian path and VNIT gate access clear.",
+        "Display your active vending certificate during operating hours.",
+        "Use only your assigned slot and leave the area clean at closing time."
+      ]
     },
     {
       "id": "ZONE-A",
-      "name": "Zone A – Futala",
+      "name": "Zone A \u2013 Futala Lake",
+      "area": "Futala Lake Promenade, Traffic Park Road, Nagpur",
+      "status": "ACTIVE",
       "capacity": 40,
       "activeVendors": 33,
+      "defaultSlot": 5,
       "customerAccess": 8.8,
       "livelihoodPotential": 8.6,
-      "baselineFootfall": 2480
+      "baselineFootfall": 2480,
+      "operatingHours": "6:00 AM \u2013 10:00 PM",
+      "validUntil": "17 Aug 2027",
+      "center": [21.1497, 79.0370],
+      "boundary": [
+        [21.15045, 79.03620],
+        [21.15060, 79.03790],
+        [21.14890, 79.03800],
+        [21.14880, 79.03630]
+      ],
+      "activity": [1900, 2050, 2200, 2350, 2500, 2800, 2480],
+      "vendorActivity": [28, 30, 31, 32, 34, 36, 33],
+      "rules": [
+        "Operate only inside the marked lake-side vending boundary.",
+        "No obstruction of the jogging track or lake promenade.",
+        "Display your active vending certificate during operating hours.",
+        "Maintain cleanliness; no waste disposal near the lake."
+      ]
     },
     {
       "id": "ZONE-C",
-      "name": "Zone C – Sitabuldi",
+      "name": "Zone C \u2013 Sitabuldi",
+      "area": "Sitabuldi Market Area, Civil Lines, Nagpur",
+      "status": "ACTIVE",
       "capacity": 38,
       "activeVendors": 36,
+      "defaultSlot": 12,
       "customerAccess": 9.1,
       "livelihoodPotential": 8.7,
-      "baselineFootfall": 2720
+      "baselineFootfall": 2720,
+      "operatingHours": "8:00 AM \u2013 9:00 PM",
+      "validUntil": "17 Aug 2027",
+      "center": [21.1494, 79.0832],
+      "boundary": [
+        [21.15010, 79.08240],
+        [21.15020, 79.08400],
+        [21.14870, 79.08410],
+        [21.14860, 79.08250]
+      ],
+      "activity": [2100, 2250, 2400, 2550, 2700, 3000, 2720],
+      "vendorActivity": [30, 32, 33, 34, 36, 38, 36],
+      "rules": [
+        "Operate only in the designated market vending zone.",
+        "Keep main road access and shop frontages clear.",
+        "Display your active vending certificate during operating hours.",
+        "Follow NMC noise guidelines during peak market hours."
+      ]
     },
     {
       "id": "ZONE-D",
-      "name": "Zone D – Dharampeth",
+      "name": "Zone D \u2013 Dharampeth",
+      "area": "Ramnagar Square, Dharampeth, Nagpur",
+      "status": "ACTIVE",
       "capacity": 32,
       "activeVendors": 27,
+      "defaultSlot": 9,
       "customerAccess": 8.6,
       "livelihoodPotential": 8.4,
-      "baselineFootfall": 2310
+      "baselineFootfall": 2310,
+      "operatingHours": "7:00 AM \u2013 8:30 PM",
+      "validUntil": "17 Aug 2027",
+      "center": [21.1441, 79.0784],
+      "boundary": [
+        [21.14490, 79.07760],
+        [21.14500, 79.07920],
+        [21.14330, 79.07930],
+        [21.14320, 79.07770]
+      ],
+      "activity": [1750, 1900, 2000, 2150, 2300, 2600, 2310],
+      "vendorActivity": [22, 24, 25, 26, 28, 30, 27],
+      "rules": [
+        "Operate only within the designated Ramnagar vending bay.",
+        "No vending on main road shoulders or pedestrian crossings.",
+        "Display your active vending certificate during operating hours.",
+        "Coordinate with NMC inspector for weekly zone compliance check."
+      ]
     }
   ]
 }

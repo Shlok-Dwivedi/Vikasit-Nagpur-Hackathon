@@ -11,22 +11,17 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+# Ensure the backend root is on the path so 'app.*' imports always resolve
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from app.config import FOOTFALL_BASELINE, OFFICER_PASSKEY, SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
-    from app.footfall_fusion import FootfallFusionService
-    from app.opencv_service import OpenCVImageError, opencv_service
-    from app.pipelines.registry import PipelineRegistry
-    from app.pipelines.executor import DynamicPipelineExecutor
-    from app.pipelines.langgraph_orchestrator import LangGraphAgenticOrchestrator
-except ImportError:
-    from config import FOOTFALL_BASELINE, OFFICER_PASSKEY, SUPABASE_URL, SUPABASE_ANON_KEY, SARVAM_API_KEY, get_supabase_client
-    from footfall_fusion import FootfallFusionService
-    from opencv_service import OpenCVImageError, opencv_service
-    from pipelines.registry import PipelineRegistry
-    from pipelines.executor import DynamicPipelineExecutor
-    from pipelines.langgraph_orchestrator import LangGraphAgenticOrchestrator
+
+from app.config import FOOTFALL_BASELINE, OFFICER_PASSKEY, SUPABASE_URL, SUPABASE_ANON_KEY, get_supabase_client
+from app.footfall_fusion import FootfallFusionService
+from app.opencv_service import OpenCVImageError, opencv_service
+from app.pipelines.registry import PipelineRegistry
+from app.pipelines.executor import DynamicPipelineExecutor
+from app.pipelines.langgraph_orchestrator import LangGraphAgenticOrchestrator
+
 
 app = FastAPI(
     title="Viksit Vyapari LangGraph Multi-Agent API",
@@ -118,6 +113,17 @@ violations_db = []
 with (Path(__file__).parent / "data" / "zones.json").open("r", encoding="utf-8") as zones_file:
     zones_db = json.load(zones_file)["zones"]
 officer_tokens: set[str] = set()
+
+# Load vendors from Supabase on startup for persistence across restarts
+try:
+    _sb = get_supabase_client()
+    if _sb:
+        _res = _sb.table("vendors").select("*").execute()
+        if _res.data:
+            vendors_db = list(_res.data)
+except Exception as _e:
+    pass  # Supabase table may not exist yet; continue with empty in-memory list
+
 
 def require_officer(authorization: Optional[str] = Header(default=None)) -> str:
     token = authorization.removeprefix("Bearer ").strip() if authorization else ""
@@ -322,6 +328,13 @@ async def get_dashboard_stats():
 async def get_zones():
     return {"status": "success", "zones": zones_db}
 
+@app.get("/api/zones/{zone_id}/full")
+async def get_zone_full(zone_id: str):
+    """Returns full zone data including boundary, center, rules for vendor display."""
+    zone = get_zone_or_404(zone_id)
+    return {"status": "success", "zone": zone}
+
+
 @app.get("/api/alerts")
 async def get_alerts():
     return {"status": "success", "alerts": alerts_db}
@@ -330,6 +343,21 @@ async def get_alerts():
 async def get_vendors():
     deduplicate_vendors()
     return {"status": "success", "count": len(vendors_db), "vendors": vendors_db}
+
+@app.get("/api/vendors/me")
+async def get_my_vendor(email: Optional[str] = None, name: Optional[str] = None):
+    """Returns the logged-in vendor's profile by email or name."""
+    deduplicate_vendors()
+    if email:
+        for v in vendors_db:
+            if str(v.get("email", "")).strip().lower() == email.strip().lower():
+                return {"status": "success", "vendor": v}
+    if name:
+        for v in vendors_db:
+            if str(v.get("name", "")).strip().lower() == name.strip().lower():
+                return {"status": "success", "vendor": v}
+    return {"status": "not_found", "vendor": None}
+
 
 @app.post("/api/vendors")
 async def create_or_update_vendor(vendor: VendorCreate):
@@ -354,18 +382,28 @@ async def create_or_update_vendor(vendor: VendorCreate):
         new_vendor = {
             "id": new_id,
             "name": vendor.name,
+            "email": getattr(vendor, 'email', None) or "",
             "stallName": vendor.stallName,
             "category": vendor.category,
             "location": vendor.location,
             "phone": vendor.phone,
-            "status": "approved",  # DIRECT APPROVAL FOR VENDORS
+            "status": "approved",
+            "assignedZone": getattr(vendor, 'assignedZone', None) or "ZONE-B",
             "lat": vendor.lat,
             "lng": vendor.lng,
             "joinedDate": datetime.now().strftime("%d %b %Y"),
             "feePaid": True,
-            "svanidhiTier": "Tier 1 (₹10,000)"
+            "svanidhiTier": None  # Assigned after livelihood pipeline assessment
         }
         vendors_db.insert(0, new_vendor)
+        # Persist to Supabase
+        try:
+            _sb = get_supabase_client()
+            if _sb:
+                _sb.table("vendors").upsert(new_vendor).execute()
+        except Exception:
+            pass  # Graceful fallback to in-memory only
+
         return {"status": "success", "message": "New vendor registered & permit granted", "vendor": new_vendor}
 
 @app.put("/api/vendors/{vendor_id}/approve")

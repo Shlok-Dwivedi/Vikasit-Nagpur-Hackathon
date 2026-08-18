@@ -5,19 +5,8 @@ import { Activity, ArrowRight, ChevronDown, Clock3, MapPin, Navigation, Route, S
 import 'leaflet/dist/leaflet.css';
 import './AIZoneOptimizer.css';
 
-const DESIGNATED_ZONE = {
-  name: 'Zone B – VNIT Gate', status: 'ACTIVE', capacity: 35, slot: 18,
-  validUntil: '17 Aug 2027', operatingHours: '7:00 AM – 9:00 PM',
-  area: 'VNIT Main Gate vending bay, South Ambazari Road, Nagpur',
-  center: [21.1237, 79.0516],
-  boundary: [[21.12445, 79.05065], [21.1245, 79.0525], [21.12305, 79.05265], [21.12285, 79.05085]],
-  rules: [
-    'Operate only inside the marked zone boundary.',
-    'Keep the pedestrian path and VNIT gate access clear.',
-    'Display your active vending certificate during operating hours.',
-    'Use only assigned Slot #18 and leave the area clean at closing time.'
-  ]
-};
+// Zone and markers are built dynamically from backend data
+
 
 const makeMarker = (className, label) => L.divIcon({
   className: '', html: `<div class="${className}"><span>${label}</span></div>`,
@@ -44,8 +33,9 @@ const CCTV_ZONE_MAP = [
   { id: 'ZONE_D', name: 'ZONE_D → Ramnagar' },
 ];
 
-export default function AIZoneOptimizer({ currentUser, backendUrl }) {
+export default function AIZoneOptimizer({ currentUser, backendUrl, officerMode = false }) {
   const apiBackendUrl = backendUrl || 'http://localhost:8000';
+
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [vendorLocation, setVendorLocation] = useState(null);
   const [selectedZone, setSelectedZone] = useState('');
@@ -60,6 +50,20 @@ export default function AIZoneOptimizer({ currentUser, backendUrl }) {
   const [cctvData, setCctvData] = useState(null);
   const [cctvLoading, setCctvLoading] = useState(true);
   const [selectedCctvZone, setSelectedCctvZone] = useState('ZONE_B');
+  const [allZones, setAllZones] = useState([]);
+  const [allZonesLoading, setAllZonesLoading] = useState(true);
+  const [isDarkTheme, setIsDarkTheme] = useState(
+    () => (document.documentElement.getAttribute('data-theme') || 'dark') !== 'light'
+  );
+
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDarkTheme(document.documentElement.getAttribute('data-theme') !== 'light');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchCctvAnalytics = async () => {
@@ -80,6 +84,26 @@ export default function AIZoneOptimizer({ currentUser, backendUrl }) {
     };
     fetchCctvAnalytics();
   }, [apiBackendUrl]);
+
+  // Fetch all zones from backend for officer view
+  useEffect(() => {
+    if (!officerMode) return;
+    const fetchAllZones = async () => {
+      try {
+        const res = await fetch(`${apiBackendUrl}/api/zones`);
+        if (!res.ok) throw new Error('Zones unavailable');
+        const data = await res.json();
+        setAllZones(data.zones || []);
+      } catch {
+        setAllZones([]);
+      } finally {
+        setAllZonesLoading(false);
+      }
+    };
+    fetchAllZones();
+  }, [apiBackendUrl, officerMode]);
+
+
 
   useEffect(() => {
     const vendor = currentUser?.vendorData;
@@ -151,6 +175,136 @@ export default function AIZoneOptimizer({ currentUser, backendUrl }) {
 
   const currentCctv = cctvData ? (cctvData[selectedCctvZone] || cctvData[selectedCctvZone.replace('-', '_').toUpperCase()]) : null;
 
+  // ── OFFICER ZONE MANAGEMENT VIEW ──────────────────────────────────────────
+  if (officerMode) {
+    // Zone colour palette keyed by zone ID
+    const ZONE_COLORS = { 'ZONE-A': '#8b5cf6', 'ZONE-B': '#10b981', 'ZONE-C': '#3b82f6', 'ZONE-D': '#f59e0b' };
+
+    return (
+      <div className="zone-locator-page">
+        {/* CCTV Analytics - same as vendor but relabeled */}
+        <section className="cctv-analytics-section">
+          <div className="cctv-header">
+            <div>
+              <span className="zone-locator-eyebrow">MUNICIPAL CCTV INTELLIGENCE</span>
+              <h3 style={{ margin: '4px 0 0', color: 'var(--text-main)', fontSize: '1.1rem' }}>Live Zone Camera Feed Analytics</h3>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label htmlFor="cctv-zone-select-officer" style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>Zone Selection:</label>
+              <select
+                id="cctv-zone-select-officer"
+                className="cctv-zone-select"
+                value={selectedCctvZone}
+                onChange={(e) => setSelectedCctvZone(e.target.value)}
+              >
+                {[{id:'ZONE_A',name:'ZONE_A → Traffic Park'},{id:'ZONE_B',name:'ZONE_B → VNIT Gate'},{id:'ZONE_C',name:'ZONE_C → Civil Lines'},{id:'ZONE_D',name:'ZONE_D → Ramnagar'}].map(z => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {cctvLoading ? (
+            <div style={{ color: '#94a3b8', fontSize: '0.8rem', padding: '12px' }}>Loading CCTV analytics…</div>
+          ) : currentCctv ? (
+            <div className="cctv-metrics-grid">
+              <div className="cctv-metric-card"><span>Avg Detected People</span><strong>{currentCctv.average_people ?? '—'}</strong></div>
+              <div className="cctv-metric-card"><span>Peak Occupancy</span><strong>{currentCctv.peak_people ?? '—'}</strong></div>
+              <div className="cctv-metric-card"><span>Avg Vehicles</span><strong>{currentCctv.average_vehicles ?? '—'}</strong></div>
+              <div className="cctv-metric-card"><span>Peak Vehicles</span><strong>{currentCctv.peak_vehicles ?? '—'}</strong></div>
+              <div className="cctv-metric-card"><span>Congestion Score</span><strong style={{ color: currentCctv.congestion_score > 85 ? '#f87171' : '#34d399' }}>{currentCctv.congestion_score ?? '—'}</strong></div>
+            </div>
+          ) : (
+            <div className="cctv-unavailable">CCTV data unavailable</div>
+          )}
+        </section>
+
+        {/* All Zones Overview */}
+        <div className="zone-locator-heading">
+          <div>
+            <span className="zone-locator-eyebrow">OFFICER ZONE MANAGEMENT</span>
+            <h2>All Nagpur Vending Zones</h2>
+            <p>Monitor capacity, occupancy and zone health across all authorised vending bays.</p>
+          </div>
+          <div className="zone-locator-cert"><ShieldCheck size={17} /> Officer Access Active</div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', padding: '0 0 24px' }}>
+          {allZonesLoading ? (
+            <div style={{ color: '#94a3b8', gridColumn: '1/-1', padding: '24px', textAlign: 'center' }}>Loading zones from backend…</div>
+          ) : allZones.length === 0 ? (
+            <div style={{ color: '#f87171', gridColumn: '1/-1', padding: '24px', textAlign: 'center' }}>Could not load zones. Make sure backend is running.</div>
+          ) : allZones.map(zone => {
+            const color = ZONE_COLORS[zone.id] || '#6366f1';
+            const active = zone.activeVendors ?? 0;
+            const capacity = zone.capacity ?? 1;
+            const occupancy = Math.round((active / capacity) * 100);
+            const cctvKey = zone.id?.replace('-', '_');
+            const cctv = cctvData ? (cctvData[cctvKey] || null) : null;
+
+            return (
+              <div key={zone.id} style={{
+                background: 'var(--card-bg)', border: `1px solid ${color}44`,
+                borderRadius: '16px', padding: '20px', position: 'relative', overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: color, borderRadius: '16px 0 0 16px' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: color, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{zone.id}</span>
+                    <h4 style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 700 }}>{zone.name}</h4>
+                  </div>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: '#34d399', padding: '3px 8px', borderRadius: '20px', fontWeight: 700 }}>{zone.status}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '10px' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: color }}>{active}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Active Vendors</div>
+                  </div>
+                  <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '10px' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>{zone.capacity}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Total Capacity</div>
+                  </div>
+                </div>
+                {/* Occupancy bar */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Occupancy</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: occupancy > 90 ? '#f87171' : occupancy > 75 ? '#f59e0b' : '#34d399' }}>{occupancy}%</span>
+                  </div>
+                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${occupancy}%`, background: occupancy > 90 ? '#f87171' : occupancy > 75 ? '#f59e0b' : color, borderRadius: '4px', transition: 'width 0.6s ease' }} />
+                  </div>
+                </div>
+                {cctv && (
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
+                    <span>👁 People: <strong style={{ color: '#94a3b8' }}>{cctv.average_people ?? '—'}</strong></span>
+                    <span style={{ marginLeft: '12px' }}>🚦 Congestion: <strong style={{ color: cctv.congestion_score > 85 ? '#f87171' : '#34d399' }}>{cctv.congestion_score ?? '—'}</strong></span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Performance Section */}
+        <section className="zone-performance-section">
+          <div className="locator-section-heading">
+            <div><span className="zone-locator-eyebrow">ZONE PERFORMANCE</span><h2>Zone B – VNIT Gate (Detail View)</h2><p>Live performance metrics for the selected analysis zone.</p></div>
+            <span className="performance-updated"><span /> Updated today</span>
+          </div>
+          <div className="performance-metrics">
+            <article><Activity size={18} /><span>Pedestrian Footfall</span><strong>{performance ? performance.footfall.toLocaleString() : '—'} <small>/ hr</small></strong></article>
+            <article><Users size={18} /><span>Vendor Activity</span><strong>{performance?.activeVendors ?? '—'} <small>/ {performance?.capacity ?? '—'} slots</small></strong></article>
+            <article><Route size={18} /><span>Customer Access</span><strong>{performance?.customerAccess ?? '—'} <small>/ 10</small></strong></article>
+            <article><Scale size={18} /><span>Zone Balance</span><strong>{performance?.zoneBalance ?? '—'} <small>/ 10</small></strong></article>
+          </div>
+          {performanceError && <div className="simulation-error">{performanceError}</div>}
+          {performance && <aside className="zone-insight-card"><div><Sparkles size={18} /><strong>AI Zone Insight</strong></div><p>{performance.optimizer.recommendation}</p></aside>}
+        </section>
+      </div>
+    );
+  }
+  // ── END OFFICER VIEW ────────────────────────────────────────────────────
+
   return (
     <div className="zone-locator-page">
       {/* Zone Selection & CCTV Analytics Section */}
@@ -218,7 +372,13 @@ export default function AIZoneOptimizer({ currentUser, backendUrl }) {
 
       <section className="zone-map-shell" aria-label="Current designated vending zone map">
         <MapContainer center={DESIGNATED_ZONE.center} zoom={17} scrollWheelZoom zoomControl={false} className="zone-locator-map">
-          <TileLayer attribution='&copy; OpenStreetMap contributors &copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+            url={isDarkTheme
+              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+            }
+          />
           <Polygon positions={DESIGNATED_ZONE.boundary} pathOptions={{ color: '#8b5cf6', weight: 4, fillColor: '#6d5dfc', fillOpacity: 0.24 }}>
             <Tooltip sticky>Authorized vending boundary</Tooltip>
           </Polygon>
